@@ -1,87 +1,93 @@
 {
     "version": "2.0.0",
-    "runner": "terminal",
-    "type": "shell",
-    "echoCommand": true,
-    "presentation" : { "reveal": "always" },
     "tasks": [
-          //C++ 컴파일
-          {
-            "label": "save and compile for C++",
-            "command": "g++",
-            "args": [
-                "${file}",
-                "-o",
-                "${fileDirname}/${fileBasenameNoExtension}"
-            ],
-            "group": "build",
-
-            //컴파일시 에러를 편집기에 반영
-            //참고:   https://code.visualstudio.com/docs/editor/tasks#_defining-a-problem-matcher
-
-            "problemMatcher": {
-                "fileLocation": [
-                    "relative",
-                    "${workspaceRoot}"
-                ],
-                "pattern": {
-                    // The regular expression.
-                  //Example to match: helloWorld.c:5:3: warning: implicit declaration of function 'prinft'
-                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning error):\\s+(.*)$",
-                    "file": 1,
-                    "line": 2,
-                    "column": 3,
-                    "severity": 4,
-                    "message": 5
-                }
-            }
-        },
-        //C 컴파일
+        // Configure section
         {
-            "label": "save and compile for C",
-            "command": "gcc",
+            "type": "shell",
+            "label": "CMake: Configure Debug",
+            "command": "cmake",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
             "args": [
-                "${file}",
-                "-o",
-                "${fileDirname}/${fileBasenameNoExtension}"
+                "-S.",
+                "-Bbuild/Debug",
+                "-DCMAKE_BUILD_TYPE=Debug"
             ],
-            "group": "build",
-
-            //컴파일시 에러를 편집기에 반영
-            //참고:   https://code.visualstudio.com/docs/editor/tasks#_defining-a-problem-matcher
-
-            "problemMatcher": {
-                "fileLocation": [
-                    "relative",
-                    "${workspaceRoot}"
-                ],
-                "pattern": {
-                    // The regular expression.
-                  //Example to match: helloWorld.c:5:3: warning: implicit declaration of function 'prinft'
-                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning error):\\s+(.*)$",
-                    "file": 1,
-                    "line": 2,
-                    "column": 3,
-                    "severity": 4,
-                    "message": 5
-                }
-            }
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "problemMatcher": [],
+            "detail": "CMake configure task for Debug"
         },
-        // 바이너리 실행(Ubuntu)
         {
-            "label": "execute",
-            "command": "${fileDirname}/${fileBasenameNoExtension}",
-            "group": "test"
+            "type": "shell",
+            "label": "CMake: Configure Release",
+            "command": "cmake",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "args": [
+                "-S.",
+                "-Bbuild/Release",
+                "-DCMAKE_BUILD_TYPE=Release"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "problemMatcher": [],
+            "detail": "CMake configure task for Release"
+        },
+        // Build section
+        {
+            "type": "shell",
+            "label": "CMake: Debug build",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "command": "cmake",
+            "args": [
+                "--build",
+                "build/Debug",
+                "--parallel",
+                "16"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [],
+            "detail": "CMake build task for Debug",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "CMake: Configure Debug"
+            ]
+        },
+        {
+            "type": "shell",
+            "label": "CMake: Release build",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "command": "cmake",
+            "args": [
+                "--build",
+                "build/Release",
+                "--parallel",
+                "16"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "problemMatcher": [],
+            "detail": "CMake build task for Release",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "CMake: Configure Release"
+            ]
         }
-        // 바이너리 실행(Windows)
-        // {
-        //     "label": "execute",
-        //     "command": "cmd",
-        //     "group": "test",
-        //     "args": [
-        //         "/C", "${fileDirname}\\${fileBasenameNoExtension}"
-        //     ]
-   
-        // }
     ]
 }
