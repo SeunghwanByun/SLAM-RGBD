@@ -7,15 +7,18 @@ set(SOURCES
     main.c
 )
 
+# Generate execution file
 add_executable(Youth ${SOURCES})
 
+# Find Library
+# OpenGL
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(GLUT REQUIRED)
 
+# Find link libraries
 target_link_libraries(Youth
 OpenGL::GL
 GLEW::GLEW
 GLUT::GLUT
 )
-
