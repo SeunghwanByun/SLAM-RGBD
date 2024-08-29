@@ -1,7 +1,7 @@
 {
     "version": "2.0.0",
     "tasks": [
-        // Configure section
+        // Configure Debug task
         {
             "type": "shell",
             "label": "CMake: Configure Debug",
@@ -14,13 +14,10 @@
                 "-Bbuild/Debug",
                 "-DCMAKE_BUILD_TYPE=Debug"
             ],
-            "group": {
-                "kind": "build",
-                "isDefault": false
-            },
             "problemMatcher": [],
             "detail": "CMake configure task for Debug"
         },
+        // Configure Release task
         {
             "type": "shell",
             "label": "CMake: Configure Release",
@@ -33,14 +30,10 @@
                 "-Bbuild/Release",
                 "-DCMAKE_BUILD_TYPE=Release"
             ],
-            "group": {
-                "kind": "build",
-                "isDefault": false
-            },
             "problemMatcher": [],
             "detail": "CMake configure task for Release"
         },
-        // Build section
+        // Build Debug task
         {
             "type": "shell",
             "label": "CMake: Debug build",
@@ -56,7 +49,7 @@
             ],
             "group": {
                 "kind": "build",
-                "isDefault": true
+                "isDefault": false
             },
             "problemMatcher": [],
             "detail": "CMake build task for Debug",
@@ -65,6 +58,7 @@
                 "CMake: Configure Debug"
             ]
         },
+        // Build Release task
         {
             "type": "shell",
             "label": "CMake: Release build",
