@@ -2,6 +2,15 @@ cmake_minimum_required(VERSION 3.16)
 
 project(ProjectYouth)
 
+if(WIN32)
+    message("Building on Windows")
+    # Windows-specific settings
+elseif(UNIX AND NOT APPLE)
+    message("Building on Linux")
+elseif(APPLE)
+    message("Building on macOS")
+endif()
+
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -10,6 +19,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(SOURCES
     main.c
     astra_wrapper.cpp
+    viewer.c
 )
 
 # Find Library
@@ -33,6 +43,7 @@ target_link_libraries(Youth
     GLEW::GLEW
     GLUT::GLUT
     GLU
+    X11
     astra
     astra_core
     stdc++
