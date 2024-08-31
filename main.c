@@ -9,6 +9,10 @@
 GLuint depthTexture;
 GLuint colorTexture;
 
+float angleX = 0.0f;
+float angleY = 0.0f;
+float distance = 2.0f;
+
 MyAstraContext* context;
 
 void initOpenGL()
@@ -152,18 +156,117 @@ void display_color()
     glutSwapBuffers();
 }
 
+void display_3d()
+{
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    int width, height;
+    const int16_t* depthData = my_astra_get_depth_data(context, &width, &height);
+
+    if (depthData)
+    {
+        glLoadIdentity();
+        glTranslatef(0.0f, 0.0f, -distance);
+        glRotatef(angleX, 1.0f, 0.0f, 0.0f);
+        glRotatef(angleY, 0.0f, 1.0f, 0.0f);
+
+        glBegin(GL_POINTS);
+
+        for (int y = 0; y < height; ++y)
+        {
+            for (int x = 0; x < width; ++x)
+            {
+                int index = y * width + x;
+                int depthValue = depthData[index];
+
+                if (depthValue > 0)
+                {
+                    // 3D 좌표 계산 (단순화된 카메라 모델 사용)
+                    float z = depthValue / 1000.0f;  // 밀리미터에서 미터로 변환
+                    float x_pos = (x - width / 2) * z / 570.3f;  // 570.3f는 Astra 카메라의 초점 거리 (단순화)
+                    float y_pos = (y - height / 2) * z / 570.3f;
+
+                    // 깊이에 따라 색상 변화
+                    float intensity = 1.0f - z / distance;
+                    glColor3f(intensity, intensity, intensity);
+
+                    glVertex3f(x_pos, -y_pos, -z);
+                }
+            }
+        }
+
+        glEnd();
+    }
+
+    glutSwapBuffers();
+}
+
 void idle()
 {
     glutPostRedisplay();
 }
 
+void keyboard(unsigned char key, int x, int y)
+{
+    switch (key)
+    {
+        case 27: // ESC 키
+            my_astra_terminate(context);
+            exit(0);
+            break;
+    }
+}
+
+void mouse(int button, int state, int x, int y)
+{
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
+    {
+        angleY += 5.0f;
+    }
+    if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)
+    {
+        angleX += 5.0f;
+    }
+}
+
+void reshape(int w, int h)
+{
+    glViewport(0, 0, w, h);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(45.0, (double)w / (double)h, 0.1, 100.0);
+    glMatrixMode(GL_MODELVIEW);
+}
+
 int main(int argc, char** argv)
 {
+    // printf("Initializing OpenGL...\n");
+    // glutInit(&argc, argv);
+    // glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+    // glutInitWindowSize(640, 480);
+    // glutCreateWindow("Astra Camera Depth Viewer");
+
+    // glewInit();
+    // initOpenGL();
+
+    // printf("Initializing Astra...\n");
+    // context = my_astra_initialize();
+
+    // // glutDisplayFunc(display);
+    // // glutDisplayFunc(display_depth);
+    // // glutDisplayFunc(display_point_cloud);
+    // // glutDisplayFunc(display_color);
+    // glutIdleFunc(idle);
+    // glutMainLoop();
+
+    // my_astra_terminate(context);
+
+
     printf("Initializing OpenGL...\n");
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(640, 480);
-    glutCreateWindow("Astra Camera Depth Viewer");
+    glutCreateWindow("Astra Camera 3D Viewer");
 
     glewInit();
     initOpenGL();
@@ -171,14 +274,14 @@ int main(int argc, char** argv)
     printf("Initializing Astra...\n");
     context = my_astra_initialize();
 
-    // glutDisplayFunc(display);
-    // glutDisplayFunc(display_depth);
-    // glutDisplayFunc(display_point_cloud);
-    glutDisplayFunc(display_color);
+    glutDisplayFunc(display_3d);
     glutIdleFunc(idle);
+    glutReshapeFunc(reshape);
+    glutKeyboardFunc(keyboard);
+    glutMouseFunc(mouse);
+
     glutMainLoop();
 
     my_astra_terminate(context);
-
     return 0;
 }
