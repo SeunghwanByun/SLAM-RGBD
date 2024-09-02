@@ -6,22 +6,24 @@
 
 extern "C" {
 
-struct MyAstraContext {
+struct AstraContext {
     astra::StreamSet* streamSet;
     astra::StreamReader* reader;
 };
 
-MyAstraContext* my_astra_initialize()
+AstraContext_t* InitializeAstraObj()
 {
+    // Initial Astra SDK
     astra::initialize();
-    MyAstraContext* context = new MyAstraContext;
+    AstraContext_t* context = new AstraContext_t;
     context->streamSet = new astra::StreamSet();
     context->reader = new astra::StreamReader(context->streamSet->create_reader());
     context->reader->stream<astra::DepthStream>().start();
+    context->reader->stream<astra::ColorStream>().start();
     return context;
 }
 
-void my_astra_terminate(MyAstraContext* context)
+void TerminateAstraObj(AstraContext_t* context)
 {
     delete context->reader;
     delete context->streamSet;
@@ -29,7 +31,7 @@ void my_astra_terminate(MyAstraContext* context)
     astra::terminate();
 }
 
-const int16_t* my_astra_get_depth_data(MyAstraContext* context, int* width, int* height)
+const int16_t* GetDepthDataAstra(AstraContext_t* context, int* width, int* height)
 {
     astra::Frame frame = context->reader->get_latest_frame();
     auto depthFrame = frame.get<astra::DepthFrame>();
@@ -39,11 +41,13 @@ const int16_t* my_astra_get_depth_data(MyAstraContext* context, int* width, int*
         *width = depthFrame.width();
         *height = depthFrame.height();
         return depthFrame.data();
+    }else{
+        std::cout << "Get Depth Frame Failed...!" << std::endl;
     }
     return NULL;
 }
 
-const uint8_t* my_astra_get_color_data(MyAstraContext* context, int* width, int* height)
+const uint8_t* GetColorDataAstra(AstraContext_t* context, int* width, int* height)
 {
     astra::Frame frame = context->reader->get_latest_frame();
     auto colorFrame = frame.get<astra::ColorFrame>();
@@ -56,7 +60,9 @@ const uint8_t* my_astra_get_color_data(MyAstraContext* context, int* width, int*
 
         // RgbPixel 포인터를 uint8_t 포인터로 변환
         return reinterpret_cast<const uint8_t*>(rgbData);
-    }
+    }else{
+        std::cout << "Get Color Frame Failed...!" << std::endl;
+    } 
     return NULL;
 }
 

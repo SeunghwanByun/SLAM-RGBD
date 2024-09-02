@@ -16,7 +16,7 @@ float distance = 2.0f;
 int lastMouseX = 0, lastMouseY = 0;
 int isDragging = 0;
 
-MyAstraContext* context;
+AstraContext_t* context;
 
 void initOpenGL()
 {
@@ -32,7 +32,7 @@ void display()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     int width, height;
-    const int16_t* depthData = my_astra_get_depth_data(context, &width, &height);
+    const int16_t* depthData = GetDepthDataAstra(context, &width, &height);
 
     if (depthData)
     {
@@ -58,7 +58,7 @@ void display_depth()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     int width, height;
-    const int16_t* depthData = my_astra_get_depth_data(context, &width, &height);
+    const int16_t* depthData = GetDepthDataAstra(context, &width, &height);
 
     if (depthData)
     {
@@ -95,7 +95,7 @@ void display_point_cloud()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     int width, height;
-    const int16_t* depthData = my_astra_get_depth_data(context, &width, &height);
+    const int16_t* depthData = GetDepthDataAstra(context, &width, &height);
 
     if (depthData)
     {
@@ -136,7 +136,7 @@ void display_color()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     int width, height;
-    const uint8_t* colorData = my_astra_get_color_data(context, &width, &height);
+    const uint8_t* colorData = GetColorDataAstra(context, &width, &height);
 
     if (colorData)
     {
@@ -159,15 +159,14 @@ void display_color()
     glutSwapBuffers();
 }
 
-void display_3d()
-{
+void display_3d_color(){
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     int width, height;
-    const int16_t* depthData = my_astra_get_depth_data(context, &width, &height);
+    const int16_t* depthData = GetDepthDataAstra(context, &width, &height);
+    const uint8_t* colorData = GetColorDataAstra(context, &width, &height);
 
-    if (depthData)
-    {
+    if(depthData /*&& colorData*/){
         glLoadIdentity();
         glTranslatef(0.0f, 0.0f, -distance);
         glRotatef(angleX, 1.0f, 0.0f, 0.0f);
@@ -175,24 +174,24 @@ void display_3d()
 
         glBegin(GL_POINTS);
 
-        for (int y = 0; y < height; ++y)
-        {
-            for (int x = 0; x < width; ++x)
-            {
+        for(int y = 0; y < height; ++y){
+            for(int x = 0; x < width; ++x){
                 int index = y * width + x;
                 int depthValue = depthData[index];
 
-                if (depthValue > 0)
-                {
-                    // 3D 좌표 계산 (단순화된 카메라 모델 사용)
-                    float z = depthValue / 1000.0f;  // 밀리미터에서 미터로 변환
-                    float x_pos = (x - width / 2) * z / 570.3f;  // 570.3f는 Astra 카메라의 초점 거리 (단순화)
+                if(depthValue > 0){
+                    // Calculate 3D Coordinate (Using Simple Camera Model)
+                    float z = depthValue / 1000.0f; // from mm to m
+                    float x_pos = (x - width / 2) * z / 570.3f; // 570.3f is focal distance of Astra camera
                     float y_pos = (y - height / 2) * z / 570.3f;
 
-                    // 깊이에 따라 색상 변화
-                    float intensity = 1.0f - z / distance;
-                    glColor3f(intensity, intensity, intensity);
+                    // Set color using color data (RGB order)
+                    int colorIndex = index * 3; // RGB consist of 3 values.
+                    float r = colorData[colorIndex] / 255.0f;
+                    float g = colorData[colorIndex + 1] / 255.0f;
+                    float b = colorData[colorIndex + 2] / 255.0f;
 
+                    glColor3f(r, g, b);
                     glVertex3f(x_pos, -y_pos, -z);
                 }
             }
@@ -214,7 +213,7 @@ void keyboard(unsigned char key, int x, int y)
     switch (key)
     {
         case 27: // ESC 키
-            my_astra_terminate(context);
+            TerminateAstraObj(context);
             exit(0);
             break;
     }
@@ -259,27 +258,6 @@ void reshape(int w, int h)
 }
 
 void InitViewer(int argc, char** argv){
-        // printf("Initializing OpenGL...\n");
-    // glutInit(&argc, argv);
-    // glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-    // glutInitWindowSize(640, 480);
-    // glutCreateWindow("Astra Camera Depth Viewer");
-
-    // glewInit();
-    // initOpenGL();
-
-    // printf("Initializing Astra...\n");
-    // context = my_astra_initialize();
-
-    // // glutDisplayFunc(display);
-    // // glutDisplayFunc(display_depth);
-    // // glutDisplayFunc(display_point_cloud);
-    // // glutDisplayFunc(display_color);
-    // glutIdleFunc(idle);
-    // glutMainLoop();
-
-    // my_astra_terminate(context);
-
     printf("Initializing OpenGL...\n");
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
@@ -302,9 +280,10 @@ void InitViewer(int argc, char** argv){
     initOpenGL();
     
     printf("Initializing Astra...\n");
-    context = my_astra_initialize();
+    context = InitializeAstraObj();
 
-    glutDisplayFunc(display_3d);
+    // glutDisplayFunc(display_3d);
+    glutDisplayFunc(display_3d_color);
     glutIdleFunc(idle);
     glutReshapeFunc(reshape);
     glutKeyboardFunc(keyboard);
@@ -313,5 +292,5 @@ void InitViewer(int argc, char** argv){
 
     glutMainLoop();
 
-    my_astra_terminate(context);
+    TerminateAstraObj(context);
 }

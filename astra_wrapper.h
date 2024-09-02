@@ -9,12 +9,12 @@ extern "C" {
 
 #include <stdint.h>
 
-typedef struct MyAstraContext MyAstraContext;
+typedef struct AstraContext AstraContext_t;
 
-MyAstraContext* my_astra_initialize();
-void my_astra_terminate(MyAstraContext* context);
-const int16_t* my_astra_get_depth_data(MyAstraContext* context, int* width, int* height);
-const uint8_t* my_astra_get_color_data(MyAstraContext* context, int* width, int* height);
+AstraContext_t* InitializeAstraObj();
+void TerminateAstraObj(AstraContext_t* context);
+const int16_t* GetDepthDataAstra(AstraContext_t* context, int* width, int* height);
+const uint8_t* GetColorDataAstra(AstraContext_t* context, int* width, int* height);
 
 #ifdef __cplusplus
 }
