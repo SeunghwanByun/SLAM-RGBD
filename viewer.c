@@ -32,7 +32,7 @@ void display()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     int width, height;
-    const int16_t* depthData = GetDepthDataAstra(context, &width, &height);
+    const int16_t* depthData = GetDepthDataAstraOpenGL(context, &width, &height);
 
     if (depthData)
     {
@@ -58,7 +58,7 @@ void display_depth()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     int width, height;
-    const int16_t* depthData = GetDepthDataAstra(context, &width, &height);
+    const int16_t* depthData = GetDepthDataAstraOpenGL(context, &width, &height);
 
     if (depthData)
     {
@@ -95,7 +95,7 @@ void display_point_cloud()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     int width, height;
-    const int16_t* depthData = GetDepthDataAstra(context, &width, &height);
+    const int16_t* depthData = GetDepthDataAstraOpenGL(context, &width, &height);
 
     if (depthData)
     {
@@ -136,7 +136,7 @@ void display_color()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     int width, height;
-    const uint8_t* colorData = GetColorDataAstra(context, &width, &height);
+    const uint8_t* colorData = GetColorDataAstraOpenGL(context, &width, &height);
 
     if (colorData)
     {
@@ -163,8 +163,8 @@ void display_3d_color(){
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     int width, height;
-    const int16_t* depthData = GetDepthDataAstra(context, &width, &height);
-    const uint8_t* colorData = GetColorDataAstra(context, &width, &height);
+    const int16_t* depthData = GetDepthDataAstraOpenGL(context, &width, &height);
+    const uint8_t* colorData = GetColorDataAstraOpenGL(context, &width, &height);
 
     if(depthData /*&& colorData*/){
         glLoadIdentity();
@@ -282,6 +282,9 @@ void InitViewer(int argc, char** argv){
     printf("Initializing Astra...\n");
     context = InitializeAstraObj();
 
+#define EXEC_MODE 1 // 0 : OpenGL, 1 : WebGL
+
+#if EXEC_MODE == 0
     // glutDisplayFunc(display_3d);
     glutDisplayFunc(display_3d_color);
     glutIdleFunc(idle);
@@ -291,6 +294,21 @@ void InitViewer(int argc, char** argv){
     glutMotionFunc(motion);
 
     glutMainLoop();
+#elif EXEC_MODE == 1
+     // 컬러 데이터와 깊이 데이터 모두를 생성하여 사용하거나 출력
+    // const char* depthData = GetDepthDataAstraWebGL(context);
+    const char* colorData = GetColorDataAstraWebGL(context);
+
+    // 데이터를 필요한 대로 처리합니다 (예: 콘솔 출력 또는 반환)
+    if (colorData) {
+        printf("%d\n", colorData);
+    }
+
+    // if (depthData) {
+    //     std::cout << depthData << std::endl;
+    // }
+#endif
+
 
     TerminateAstraObj(context);
 }

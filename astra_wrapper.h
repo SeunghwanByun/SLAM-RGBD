@@ -13,8 +13,8 @@ typedef struct AstraContext AstraContext_t;
 
 AstraContext_t* InitializeAstraObj();
 void TerminateAstraObj(AstraContext_t* context);
-const int16_t* GetDepthDataAstra(AstraContext_t* context, int* width, int* height);
-const uint8_t* GetColorDataAstra(AstraContext_t* context, int* width, int* height);
+const int16_t* GetDepthDataAstraOpenGL(AstraContext_t* context, int* width, int* height);
+const uint8_t* GetColorDataAstraOpenGL(AstraContext_t* context, int* width, int* height);
 
 #ifdef __cplusplus
 }
