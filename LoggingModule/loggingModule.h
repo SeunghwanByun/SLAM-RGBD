@@ -1,0 +1,6 @@
+#ifndef LOGGING_MODULE_H
+#define LOGGING_MODULE_h
+
+
+
+#endif // LOGGING_MODULE_H
