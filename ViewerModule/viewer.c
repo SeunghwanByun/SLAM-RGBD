@@ -257,7 +257,7 @@ void reshape(int w, int h)
     glMatrixMode(GL_MODELVIEW);
 }
 
-void InitViewer(int argc, char** argv){
+void viewerModule(int argc, char** argv){
     printf("Initializing OpenGL...\n");
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
@@ -282,7 +282,7 @@ void InitViewer(int argc, char** argv){
     printf("Initializing Astra...\n");
     context = InitializeAstraObj();
 
-#define EXEC_MODE 1 // 0 : OpenGL, 1 : WebGL
+#define EXEC_MODE 0 // 0 : OpenGL, 1 : WebGL
 
 #if EXEC_MODE == 0
     // glutDisplayFunc(display_3d);

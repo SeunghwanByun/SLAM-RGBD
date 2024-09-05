@@ -2,10 +2,15 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "viewer.h"
+
+#include "LoggingModule/loggingModule.h"
+#include "ViewerModule/viewer.h"
 
 int main(int argc, char** argv)
 {
-    InitViewer(argc, argv);
+    viewerModule(argc, argv);
+
+    loggingModule();
+
     return 0;
 }
