@@ -19,7 +19,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(SOURCES
     main.c
     astra_wrapper.cpp
-    viewer.c
+
+    LoggingModule/loggingModule.c
+    LoggingModule/loggingModule.h
+    
+    ViewerModule/viewer.c
+    ViewerModule/viewer.h
 )
 
 # Find Library
