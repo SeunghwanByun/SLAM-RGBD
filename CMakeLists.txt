@@ -18,11 +18,19 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # Set source file
 set(SOURCES
     main.c
-    astra_wrapper.cpp
+    main.h
+
+    AlgorithmModule/Slam.c
+    AlgorithmModule/Slam.h
 
     LoggingModule/loggingModule.c
     LoggingModule/loggingModule.h
     
+    SensorModule/astra_wrapper.cpp
+    SensorModule/astra_wrapper.h
+    SensorModule/connectAstra.c
+    SensorModule/connectAstra.h
+
     ViewerModule/viewer.c
     ViewerModule/viewer.h
 )
