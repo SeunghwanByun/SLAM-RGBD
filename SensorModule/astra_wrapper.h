@@ -1,5 +1,3 @@
-// astra_wrapper.h
-
 #ifndef ASTRA_WRAPPER_H
 #define ASTRA_WRAPPER_H
 

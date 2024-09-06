@@ -1,13 +1,19 @@
 #include "connectAstra.h"
+#include <stdio.h>
 
-AstraData_t connectAstra(AstraContext_t* pstContext, AstraData_t* ){
-    AstraData_t stAstraData = {0};
+int iNumOfPoint = 0;
+AstraData_t* pstAstraData = NULL;
 
+AstraData_t connectAstra(AstraContext_t* pstContext, AstraData_t* pstSensorData){
     int width, height;
+    
     const int16_t* depthData = GetDepthDataAstraOpenGL(pstContext, &width, &height);
     const uint8_t* colorData = GetColorDataAstraOpenGL(pstContext, &width, &height);
 
     if(depthData && colorData){
+        pstAstraData = (AstraData_t*)calloc(width * height, sizeof(AstraData_t));
+        iNumOfPoint = width * height;
+        
         for(int y = 0; y < height; ++y){
             for(int x = 0; x < width; ++x){
                 int index = y * width + x;
@@ -24,6 +30,13 @@ AstraData_t connectAstra(AstraContext_t* pstContext, AstraData_t* ){
                     float r = colorData[colorIndex] / 255.0f;
                     float g = colorData[colorIndex + 1] / 255.0f;
                     float b = colorData[colorIndex + 2] / 255.0f;
+
+                    pstAstraData[index].fX = x_pos;
+                    pstAstraData[index].fY = -y_pos;
+                    pstAstraData[index].fZ = -z;
+                    pstAstraData[index].fR = r;
+                    pstAstraData[index].fG = g;
+                    pstAstraData[index].fB = b;
                 }
             }
         }
