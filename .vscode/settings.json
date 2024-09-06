@@ -4,6 +4,10 @@
         "cmath": "cpp",
         "array": "cpp",
         "string": "cpp",
-        "string_view": "cpp"
+        "string_view": "cpp",
+        "viewer.h": "c",
+        "connectastra.h": "c",
+        "main.h": "c",
+        "stdlib.h": "c"
     }
 }
