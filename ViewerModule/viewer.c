@@ -166,7 +166,7 @@ void display_3d_color(){
     const int16_t* depthData = GetDepthDataAstraOpenGL(context, &width, &height);
     const uint8_t* colorData = GetColorDataAstraOpenGL(context, &width, &height);
 
-    if(depthData /*&& colorData*/){
+    if(depthData && colorData){
         glLoadIdentity();
         glTranslatef(0.0f, 0.0f, -distance);
         glRotatef(angleX, 1.0f, 0.0f, 0.0f);
@@ -278,13 +278,13 @@ void viewerModule(int argc, char** argv){
 
     glewInit();
     initOpenGL();
-    
+
     printf("Initializing Astra...\n");
     context = InitializeAstraObj();
 
 #define EXEC_MODE 0 // 0 : OpenGL, 1 : WebGL
-
 #if EXEC_MODE == 0
+    /* Main Viewer Code. */
     // glutDisplayFunc(display_3d);
     glutDisplayFunc(display_3d_color);
     glutIdleFunc(idle);
@@ -308,7 +308,6 @@ void viewerModule(int argc, char** argv){
     //     std::cout << depthData << std::endl;
     // }
 #endif
-
 
     TerminateAstraObj(context);
 }
