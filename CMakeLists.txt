@@ -30,6 +30,8 @@ set(SOURCES
     SensorModule/astra_wrapper.h
     SensorModule/connectAstra.c
     SensorModule/connectAstra.h
+    SensorModule/sensorModule.c
+    SensorModule/sensorModule.h
 
     ViewerModule/viewer.c
     ViewerModule/viewer.h

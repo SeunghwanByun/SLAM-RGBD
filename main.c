@@ -8,7 +8,7 @@
 int main(int argc, char** argv)
 {
     viewerModule(argc, argv);
-
+    sensorModule();
     loggingModule();
 
     return 0;

@@ -12,6 +12,6 @@ typedef struct AstraData{
     float fB;
 }AstraData_t;
 
-AstraData_t connectAstra(AstraContext_t* pstContext, AstraData_t* pstSensorData);
+AstraData_t connectAstra(void);
 
 #endif // CONNECT_ASTRA_H
