@@ -16,7 +16,7 @@ float distance = 2.0f;
 int lastMouseX = 0, lastMouseY = 0;
 int isDragging = 0;
 
-AstraContext_t* context;
+extern AstraContext_t* context;
 
 void initOpenGL()
 {
@@ -171,18 +171,18 @@ void display_3d_color(){
 
     glBegin(GL_POINTS);
 
-    for(int i = 0; i < iNumOfPoint; i++){
-        float x_pos = pstAstraData[i].fX;
-        float y_pos = pstAstraData[i].fY;
-        float z_pos = pstAstraData[i].fZ;
+    // for(int i = 0; i < iNumOfPoint; i++){
+    //     float x_pos = pstAstraData[i].fX;
+    //     float y_pos = pstAstraData[i].fY;
+    //     float z_pos = pstAstraData[i].fZ;
 
-        float r = pstAstraData[i].fR;
-        float g = pstAstraData[i].fG;
-        float b = pstAstraData[i].fB;
+    //     float r = pstAstraData[i].fR;
+    //     float g = pstAstraData[i].fG;
+    //     float b = pstAstraData[i].fB;
 
-        glColor3f(r, g, b);
-        glVertex3f(x_pos, y_pos, z_pos);
-    }
+    //     glColor3f(r, g, b);
+    //     glVertex3f(x_pos, y_pos, z_pos);
+    // }
 
     // for(int y = 0; y < height; ++y){
     //     for(int x = 0; x < width; ++x){
@@ -207,45 +207,45 @@ void display_3d_color(){
     //     }
     // }
 
-    glEnd();
+    // glEnd();
 
-    // int width, height;
-    // const int16_t* depthData = GetDepthDataAstraOpenGL(context, &width, &height);
-    // const uint8_t* colorData = GetColorDataAstraOpenGL(context, &width, &height);
+    int width, height;
+    const int16_t* depthData = GetDepthDataAstraOpenGL(context, &width, &height);
+    const uint8_t* colorData = GetColorDataAstraOpenGL(context, &width, &height);
 
-    // if(depthData && colorData){
-    //     glLoadIdentity();
-    //     glTranslatef(0.0f, 0.0f, -distance);
-    //     glRotatef(angleX, 1.0f, 0.0f, 0.0f);
-    //     glRotatef(angleY, 0.0f, 1.0f, 0.0f);
+    if(depthData && colorData){
+        glLoadIdentity();
+        glTranslatef(0.0f, 0.0f, -distance);
+        glRotatef(angleX, 1.0f, 0.0f, 0.0f);
+        glRotatef(angleY, 0.0f, 1.0f, 0.0f);
 
-    //     glBegin(GL_POINTS);
+        glBegin(GL_POINTS);
 
-    //     for(int y = 0; y < height; ++y){
-    //         for(int x = 0; x < width; ++x){
-    //             int index = y * width + x;
-    //             int depthValue = depthData[index];
+        for(int y = 0; y < height; ++y){
+            for(int x = 0; x < width; ++x){
+                int index = y * width + x;
+                int depthValue = depthData[index];
 
-    //             if(depthValue > 0){
-    //                 // Calculate 3D Coordinate (Using Simple Camera Model)
-    //                 float z = depthValue / 1000.0f; // from mm to m
-    //                 float x_pos = (x - width / 2) * z / 570.3f; // 570.3f is focal distance of Astra camera
-    //                 float y_pos = (y - height / 2) * z / 570.3f;
+                if(depthValue > 0){
+                    // Calculate 3D Coordinate (Using Simple Camera Model)
+                    float z = depthValue / 1000.0f; // from mm to m
+                    float x_pos = (x - width / 2) * z / 570.3f; // 570.3f is focal distance of Astra camera
+                    float y_pos = (y - height / 2) * z / 570.3f;
 
-    //                 // Set color using color data (RGB order)
-    //                 int colorIndex = index * 3; // RGB consist of 3 values.
-    //                 float r = colorData[colorIndex] / 255.0f;
-    //                 float g = colorData[colorIndex + 1] / 255.0f;
-    //                 float b = colorData[colorIndex + 2] / 255.0f;
+                    // Set color using color data (RGB order)
+                    int colorIndex = index * 3; // RGB consist of 3 values.
+                    float r = colorData[colorIndex] / 255.0f;
+                    float g = colorData[colorIndex + 1] / 255.0f;
+                    float b = colorData[colorIndex + 2] / 255.0f;
 
-    //                 glColor3f(r, g, b);
-    //                 glVertex3f(x_pos, -y_pos, -z);
-    //             }
-    //         }
-    //     }
+                    glColor3f(r, g, b);
+                    glVertex3f(x_pos, -y_pos, -z);
+                }
+            }
+        }
 
-    //     glEnd();
-    // }
+        glEnd();
+    }
 
     glutSwapBuffers();
 }
@@ -339,7 +339,6 @@ void viewerModule(int argc, char** argv){
     glutKeyboardFunc(keyboard);
     glutMouseFunc(mouse);
     glutMotionFunc(motion);
-
     glutMainLoop();
 #elif EXEC_MODE == 1
      // 컬러 데이터와 깊이 데이터 모두를 생성하여 사용하거나 출력

@@ -4,12 +4,14 @@
 int iNumOfPoint = 0;
 AstraData_t* pstAstraData = NULL;
 
-AstraData_t connectAstra(AstraContext_t* pstContext, AstraData_t* pstSensorData){
+AstraContext_t* context;
+
+AstraData_t connectAstra(void){
     int width, height;
     
-    const int16_t* depthData = GetDepthDataAstraOpenGL(pstContext, &width, &height);
-    const uint8_t* colorData = GetColorDataAstraOpenGL(pstContext, &width, &height);
-
+    const int16_t* depthData = GetDepthDataAstraOpenGL(context, &width, &height);
+    const uint8_t* colorData = GetColorDataAstraOpenGL(context, &width, &height);
+    
     if(depthData && colorData){
         pstAstraData = (AstraData_t*)calloc(width * height, sizeof(AstraData_t));
         iNumOfPoint = width * height;
