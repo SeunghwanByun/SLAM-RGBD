@@ -4,9 +4,7 @@
 int iNumOfPoint = 0;
 AstraData_t* pstAstraData = NULL;
 
-AstraContext_t* context;
-
-AstraData_t connectAstra(void){
+AstraData_t connectAstra(AstraContext_t* context){
     int width, height;
     
     const int16_t* depthData = GetDepthDataAstraOpenGL(context, &width, &height);
@@ -39,6 +37,8 @@ AstraData_t connectAstra(void){
                     pstAstraData[index].fR = r;
                     pstAstraData[index].fG = g;
                     pstAstraData[index].fB = b;
+
+                    printf("%lf %lf %lf %lf %lf %lf\n", x_pos, -y_pos, -z, r, g, b);
                 }
             }
         }
