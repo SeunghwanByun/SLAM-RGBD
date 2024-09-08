@@ -1,5 +1,10 @@
 #include "sensorModule.h"
 
+AstraContext_t* context;
+
 void sensorModule(void){
-    connectAstra();
+    printf("Initializing Astra...\n");
+    context = InitializeAstraObj();
+
+    connectAstra(context);
 }

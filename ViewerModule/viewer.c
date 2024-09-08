@@ -321,13 +321,10 @@ void viewerModule(int argc, char** argv){
 #endif // #ifdef _WIN32
 
     glutInitWindowSize(screenWidth, screenHeight);
-    glutCreateWindow("Astra Camera 3D Viewer");
+    glutCreateWindow("3D Viewer");
 
     glewInit();
     initOpenGL();
-
-    printf("Initializing Astra...\n");
-    context = InitializeAstraObj();
 
 #define EXEC_MODE 0 // 0 : OpenGL, 1 : WebGL
 #if EXEC_MODE == 0
