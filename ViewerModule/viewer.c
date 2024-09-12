@@ -14,6 +14,7 @@ float angleX = 0.0f;
 float angleY = 0.0f;
 float distance = 2.0f;
 int lastMouseX = 0, lastMouseY = 0;
+int zoom = 1.0f;
 int isDragging = 0;
 
 extern AstraContext_t* context;
@@ -171,10 +172,11 @@ void display_3d_color(){
     glRotatef(angleX, 1.0f, 0.0f, 0.0f);
     glRotatef(angleY, 0.0f, 1.0f, 0.0f);
 
+    glScalef(zoom, zoom, zoom);
+
     glBegin(GL_POINTS);
 
     // int width, height;
-    printf("Test\n");
     for(int i = 0; i < iNumOfPoint; i++){
         float x_pos = pstAstraData[i].fX;
         float y_pos = pstAstraData[i].fY;
@@ -298,6 +300,15 @@ void motion(int x, int y) {
     }
 }
 
+void mouseWheel(int button, int dir, int x, int y){
+    if(dir > 0){
+        /* To do */
+
+    }else {
+        /* To do */
+    }
+}
+
 void reshape(int w, int h)
 {
     glViewport(0, 0, w, h);
@@ -339,6 +350,7 @@ void* viewerModule(void* id){
         glutKeyboardFunc(keyboard);
         glutMouseFunc(mouse);
         glutMotionFunc(motion);
+        glutMouseWheelFunc(mouseWheel);
         glutMainLoop();
     }
 #elif EXEC_MODE == 1
