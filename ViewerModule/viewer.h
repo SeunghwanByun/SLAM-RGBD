@@ -6,6 +6,6 @@
 #include <GL/glew.h>
 #include <GL/glut.h>
 
-void viewerModule(int argc, char** argv);
+void* viewerModule(void* id);
 
 #endif // VIEWER_H

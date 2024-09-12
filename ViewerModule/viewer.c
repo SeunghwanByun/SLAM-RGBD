@@ -161,6 +161,8 @@ void display_color()
 
 extern int iNumOfPoint;
 extern AstraData_t* pstAstraData;
+extern int astra_width;
+extern int astra_height;
 void display_3d_color(){
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -171,29 +173,31 @@ void display_3d_color(){
 
     glBegin(GL_POINTS);
 
-    // for(int i = 0; i < iNumOfPoint; i++){
-    //     float x_pos = pstAstraData[i].fX;
-    //     float y_pos = pstAstraData[i].fY;
-    //     float z_pos = pstAstraData[i].fZ;
+    // int width, height;
+    printf("Test\n");
+    for(int i = 0; i < iNumOfPoint; i++){
+        float x_pos = pstAstraData[i].fX;
+        float y_pos = pstAstraData[i].fY;
+        float z_pos = pstAstraData[i].fZ;
 
-    //     float r = pstAstraData[i].fR;
-    //     float g = pstAstraData[i].fG;
-    //     float b = pstAstraData[i].fB;
+        float r = pstAstraData[i].fR;
+        float g = pstAstraData[i].fG;
+        float b = pstAstraData[i].fB;
 
-    //     glColor3f(r, g, b);
-    //     glVertex3f(x_pos, y_pos, z_pos);
-    // }
+        glColor3f(r, g, b);
+        glVertex3f(x_pos, y_pos, z_pos);
+    }
 
-    // for(int y = 0; y < height; ++y){
-    //     for(int x = 0; x < width; ++x){
-    //         int index = y * width + x;
+    // for(int y = 0; y < astra_height; ++y){
+    //     for(int x = 0; x < astra_width; ++x){
+    //         int index = y * astra_width + x;
     //         int depthValue = depthData[index];
 
     //         if(depthValue > 0){
     //             // Calculate 3D Coordinate (Using Simple Camera Model)
     //             float z = depthValue / 1000.0f; // from mm to m
-    //             float x_pos = (x - width / 2) * z / 570.3f; // 570.3f is focal distance of Astra camera
-    //             float y_pos = (y - height / 2) * z / 570.3f;
+    //             float x_pos = (x - astra_width / 2) * z / 570.3f; // 570.3f is focal distance of Astra camera
+    //             float y_pos = (y - astra_height / 2) * z / 570.3f;
 
     //             // Set color using color data (RGB order)
     //             int colorIndex = index * 3; // RGB consist of 3 values.
@@ -207,45 +211,44 @@ void display_3d_color(){
     //     }
     // }
 
-    // glEnd();
+    glEnd();
 
-    int width, height;
-    const int16_t* depthData = GetDepthDataAstraOpenGL(context, &width, &height);
-    const uint8_t* colorData = GetColorDataAstraOpenGL(context, &width, &height);
+    // const int16_t* depthData = GetDepthDataAstraOpenGL(context, &width, &height);
+    // const uint8_t* colorData = GetColorDataAstraOpenGL(context, &width, &height);
 
-    if(depthData && colorData){
-        glLoadIdentity();
-        glTranslatef(0.0f, 0.0f, -distance);
-        glRotatef(angleX, 1.0f, 0.0f, 0.0f);
-        glRotatef(angleY, 0.0f, 1.0f, 0.0f);
+    // if(depthData && colorData){
+    //     glLoadIdentity();
+    //     glTranslatef(0.0f, 0.0f, -distance);
+    //     glRotatef(angleX, 1.0f, 0.0f, 0.0f);
+    //     glRotatef(angleY, 0.0f, 1.0f, 0.0f);
 
-        glBegin(GL_POINTS);
+    //     glBegin(GL_POINTS);
 
-        for(int y = 0; y < height; ++y){
-            for(int x = 0; x < width; ++x){
-                int index = y * width + x;
-                int depthValue = depthData[index];
+    //     for(int y = 0; y < height; ++y){
+    //         for(int x = 0; x < width; ++x){
+    //             int index = y * width + x;
+    //             int depthValue = depthData[index];
 
-                if(depthValue > 0){
-                    // Calculate 3D Coordinate (Using Simple Camera Model)
-                    float z = depthValue / 1000.0f; // from mm to m
-                    float x_pos = (x - width / 2) * z / 570.3f; // 570.3f is focal distance of Astra camera
-                    float y_pos = (y - height / 2) * z / 570.3f;
+    //             if(depthValue > 0){
+    //                 // Calculate 3D Coordinate (Using Simple Camera Model)
+    //                 float z = depthValue / 1000.0f; // from mm to m
+    //                 float x_pos = (x - width / 2) * z / 570.3f; // 570.3f is focal distance of Astra camera
+    //                 float y_pos = (y - height / 2) * z / 570.3f;
 
-                    // Set color using color data (RGB order)
-                    int colorIndex = index * 3; // RGB consist of 3 values.
-                    float r = colorData[colorIndex] / 255.0f;
-                    float g = colorData[colorIndex + 1] / 255.0f;
-                    float b = colorData[colorIndex + 2] / 255.0f;
+    //                 // Set color using color data (RGB order)
+    //                 int colorIndex = index * 3; // RGB consist of 3 values.
+    //                 float r = colorData[colorIndex] / 255.0f;
+    //                 float g = colorData[colorIndex + 1] / 255.0f;
+    //                 float b = colorData[colorIndex + 2] / 255.0f;
 
-                    glColor3f(r, g, b);
-                    glVertex3f(x_pos, -y_pos, -z);
-                }
-            }
-        }
+    //                 glColor3f(r, g, b);
+    //                 glVertex3f(x_pos, -y_pos, -z);
+    //             }
+    //         }
+    //     }
 
-        glEnd();
-    }
+    //     glEnd();
+    // }
 
     glutSwapBuffers();
 }
@@ -285,8 +288,8 @@ void motion(int x, int y) {
         int dx = x - lastMouseX;
         int dy = y - lastMouseY;
 
-        angleX += dy * 0.5f;
-        angleY += dx * 0.5f;
+        angleX += dy * 0.05f;
+        angleY += dx * 0.05f;
 
         lastMouseX = x;
         lastMouseY = y;
@@ -304,53 +307,54 @@ void reshape(int w, int h)
     glMatrixMode(GL_MODELVIEW);
 }
 
-void viewerModule(int argc, char** argv){
+void* viewerModule(void* id){
     printf("Initializing OpenGL...\n");
-    glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+    // glutInit(&argc, argv);
+    // glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 
-    // Get Monitor Resolution
+        // Get Monitor Resolution
 #ifdef _WIN32
-    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+        int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+        int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 #elif __linux__
-    Display* d = XOpenDisplay(NULL);
-    Screen* s = DefaultScreenOfDisplay(d);
-    int32_t screenWidth = s->width;
-    int32_t screenHeight = s->height;
+        Display* d = XOpenDisplay(NULL);
+        Screen* s = DefaultScreenOfDisplay(d);
+        int32_t screenWidth = s->width;
+        int32_t screenHeight = s->height;
 #endif // #ifdef _WIN32
 
-    glutInitWindowSize(screenWidth, screenHeight);
-    glutCreateWindow("3D Viewer");
+        glutInitWindowSize(screenWidth, screenHeight);
+        glutCreateWindow("3D Viewer");
 
-    glewInit();
-    initOpenGL();
+        glewInit();
+        initOpenGL();
 
 #define EXEC_MODE 0 // 0 : OpenGL, 1 : WebGL
 #if EXEC_MODE == 0
-    /* Main Viewer Code. */
-    // glutDisplayFunc(display_3d);
-    glutDisplayFunc(display_3d_color);
-    glutIdleFunc(idle);
-    glutReshapeFunc(reshape);
-    glutKeyboardFunc(keyboard);
-    glutMouseFunc(mouse);
-    glutMotionFunc(motion);
-    glutMainLoop();
-#elif EXEC_MODE == 1
-     // 컬러 데이터와 깊이 데이터 모두를 생성하여 사용하거나 출력
-    // const char* depthData = GetDepthDataAstraWebGL(context);
-    const char* colorData = GetColorDataAstraWebGL(context);
-
-    // 데이터를 필요한 대로 처리합니다 (예: 콘솔 출력 또는 반환)
-    if (colorData) {
-        printf("%d\n", colorData);
+    while(1){
+        /* Main Viewer Code. */
+        glutDisplayFunc(display_3d_color);
+        glutIdleFunc(idle);
+        glutReshapeFunc(reshape);
+        glutKeyboardFunc(keyboard);
+        glutMouseFunc(mouse);
+        glutMotionFunc(motion);
+        glutMainLoop();
     }
+#elif EXEC_MODE == 1
+        // 컬러 데이터와 깊이 데이터 모두를 생성하여 사용하거나 출력
+        // const char* depthData = GetDepthDataAstraWebGL(context);
+        const char* colorData = GetColorDataAstraWebGL(context);
 
-    // if (depthData) {
-    //     std::cout << depthData << std::endl;
-    // }
-#endif
+        // 데이터를 필요한 대로 처리합니다 (예: 콘솔 출력 또는 반환)
+        if (colorData) {
+            printf("%d\n", colorData);
+        }
 
-    TerminateAstraObj(context);
+        // if (depthData) {
+        //     std::cout << depthData << std::endl;
+        // }
+    #endif
+
+        // TerminateAstraObj(context);
 }
