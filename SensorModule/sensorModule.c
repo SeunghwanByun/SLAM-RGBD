@@ -2,9 +2,11 @@
 
 AstraContext_t* context;
 
-void sensorModule(void){
+void* sensorModule(void* id){
     printf("Initializing Astra...\n");
     context = InitializeAstraObj();
 
-    connectAstra(context);
+    while(1){
+        connectAstra(context);
+    }
 }

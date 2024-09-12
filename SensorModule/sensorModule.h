@@ -3,6 +3,6 @@
 
 #include "../main.h"
 
-void sensorModule(void);
+void* sensorModule(void* id);
 
 #endif // SENSOR_MODULE_H
