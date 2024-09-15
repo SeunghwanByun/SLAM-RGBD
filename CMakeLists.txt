@@ -15,27 +15,33 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# Set source file
-set(SOURCES
-    main.c
-    main.h
+# Sub directory addition
+add_subdirectory(AlgorithmModule)
+add_subdirectory(LoggingModule)
+add_subdirectory(SensorModule)
+add_subdirectory(ViewerModule)
 
-    AlgorithmModule/Slam.c
-    AlgorithmModule/Slam.h
+# # Set source file
+# set(SOURCES
+#     main.c
+#     main.h
 
-    LoggingModule/loggingModule.c
-    LoggingModule/loggingModule.h
+#     AlgorithmModule/Slam.c
+#     AlgorithmModule/Slam.h
+
+#     LoggingModule/loggingModule.c
+#     LoggingModule/loggingModule.h
     
-    SensorModule/astra_wrapper.cpp
-    SensorModule/astra_wrapper.h
-    SensorModule/connectAstra.c
-    SensorModule/connectAstra.h
-    SensorModule/sensorModule.c
-    SensorModule/sensorModule.h
+#     SensorModule/astra_wrapper.cpp
+#     SensorModule/astra_wrapper.h
+#     SensorModule/connectAstra.c
+#     SensorModule/connectAstra.h
+#     SensorModule/sensorModule.c
+#     SensorModule/sensorModule.h
 
-    ViewerModule/viewer.c
-    ViewerModule/viewer.h
-)
+#     ViewerModule/viewer.c
+#     ViewerModule/viewer.h
+# )
 
 # Find Library
 # OpenGL
