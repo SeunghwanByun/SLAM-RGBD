@@ -21,52 +21,25 @@ add_subdirectory(LoggingModule)
 add_subdirectory(SensorModule)
 add_subdirectory(ViewerModule)
 
-# # Set source file
-# set(SOURCES
-#     main.c
-#     main.h
-
-#     AlgorithmModule/Slam.c
-#     AlgorithmModule/Slam.h
-
-#     LoggingModule/loggingModule.c
-#     LoggingModule/loggingModule.h
-    
-#     SensorModule/astra_wrapper.cpp
-#     SensorModule/astra_wrapper.h
-#     SensorModule/connectAstra.c
-#     SensorModule/connectAstra.h
-#     SensorModule/sensorModule.c
-#     SensorModule/sensorModule.h
-
-#     ViewerModule/viewer.c
-#     ViewerModule/viewer.h
-# )
-
 # Find Library
 # OpenGL
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(GLUT REQUIRED)
 
-# Astra
-# include_directories(${ASTRA_SDK_INCLUDE})
-# link_directories(${ASTRA_SDK_LIB})
-include_directories(/astra/x86_64/include)
-link_directories(/astra/x86_64/lib)
-
 # Generate execution file
-add_executable(Youth ${SOURCES})
+add_executable(Youth main.c main.h)
 
 # Find link libraries
 target_link_libraries(Youth
+    AlgorithmModuleLib
+    LoggingModuleLib
+    SensorModuleLib
+    ViewerModuleLib
     OpenGL::GL
     GLEW::GLEW
     GLUT::GLUT
     GLU
-    X11
-    astra
-    astra_core
     stdc++
     pthread
 )
