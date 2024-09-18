@@ -1,6 +1,6 @@
 add_library(ViewerModuleLib
-    viewer.c
-    viewer.h
+    viewerModule.c
+    viewerModule.h
 )
 
 # Find link libraries

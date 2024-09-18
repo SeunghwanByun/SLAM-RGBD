@@ -1,12 +1,15 @@
 #include "connectAstra.h"
-#include <stdio.h>
 
 int iNumOfPoint = 0;
 AstraData_t* pstAstraData = NULL;
 int astra_width = 0;
 int astra_height = 0;
 
+pthread_mutex_t mutex;
+pthread_cond_t cond;
 AstraData_t connectAstra(AstraContext_t* context){
+    
+
     int width, height;
     static int iTestCnt = 0;
     
@@ -14,6 +17,13 @@ AstraData_t connectAstra(AstraContext_t* context){
     const uint8_t* colorData = GetColorDataAstraOpenGL(context, &astra_width, &astra_height);
 
     if(depthData && colorData){
+        pthread_mutex_lock(&mutex);
+
+        // Save Width, Height, Depth Data, Color Data
+        pthread_cond_signal(&cond);
+        
+        pthread_mutex_unlock(&mutex);
+
     printf("Thread Test : %d\n", iTestCnt++);
         pstAstraData = (AstraData_t*)calloc(astra_width * astra_height, sizeof(AstraData_t));
         iNumOfPoint = astra_width * astra_height;

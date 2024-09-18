@@ -1,6 +1,9 @@
 #ifndef CONNECT_ASTRA_H
 #define CONNECT_ASTRA_H
 
+#include <pthread.h>
+#include <stdio.h>
+
 #include "astra_wrapper.h"
 
 typedef struct AstraData{

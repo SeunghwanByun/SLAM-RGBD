@@ -3,9 +3,7 @@
 
 #include "LoggingModule/loggingModule.h"
 #include "AlgorithmModule/Slam.h"
-#include "SensorModule/astra_wrapper.h"
-#include "SensorModule/connectAstra.h"
 #include "SensorModule/sensorModule.h"
-#include "ViewerModule/viewer.h"
+#include "ViewerModule/viewerModule.h"
 
 #endif
