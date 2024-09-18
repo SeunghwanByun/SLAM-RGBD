@@ -2,6 +2,7 @@
 #define SENSOR_MODULE_H
 
 #include "../main.h"
+#include "connectAstra.h"
 
 void* sensorModule(void* id);
 
