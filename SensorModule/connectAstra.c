@@ -8,8 +8,6 @@ int astra_height = 0;
 pthread_mutex_t mutex;
 pthread_cond_t cond;
 AstraData_t connectAstra(AstraContext_t* context){
-    
-
     int width, height;
     static int iTestCnt = 0;
     
@@ -21,7 +19,8 @@ AstraData_t connectAstra(AstraContext_t* context){
 
         // Save Width, Height, Depth Data, Color Data
         pthread_cond_signal(&cond);
-        
+        memcpy(pstAstraData, depthData, sizeof(int16_t) * astra_width * astra_height);
+        memcpy(pstAstraData + sizeof(int16_t) * astra_width * astra_height, colorData, sizeof(uint8_t*) * astra_width * astra_height);
         pthread_mutex_unlock(&mutex);
 
     printf("Thread Test : %d\n", iTestCnt++);
