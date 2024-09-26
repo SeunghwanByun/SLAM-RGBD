@@ -11,3 +11,7 @@
         "stdlib.h": "c"
     }
 }
+
+"editor.formatOnSave": true,
+"editor.formatOnType": true,
+"editor.formatOnPaste": true,
