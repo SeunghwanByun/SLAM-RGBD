@@ -22,9 +22,14 @@ int main(int argc, char** argv)
     pthread_t logging_thread_id;
     pthread_create(&logging_thread_id, NULL, loggingModule, NULL);
 
+    /* Algorithm module. */
+    pthread_t algorithm_thread_id;
+    pthread_create(&algorithm_thread_id, NULL, algorithmModule, NULL);
+
     pthread_join(sensor_thread_id, NULL);
     pthread_join(viewer_thread_id, NULL);
     pthread_join(logging_thread_id, NULL);
+    pthread_join(algorithm_thread_id, NULL);
     
     return 0;
 }
