@@ -26,6 +26,8 @@ int main(int argc, char** argv)
     pthread_t algorithm_thread_id;
     pthread_create(&algorithm_thread_id, NULL, algorithmModule, NULL);
 
+    printf("Test Github Push\n");
+
     pthread_join(sensor_thread_id, NULL);
     pthread_join(viewer_thread_id, NULL);
     pthread_join(logging_thread_id, NULL);
