@@ -11,13 +11,6 @@ int main(int argc, char** argv)
     pthread_t sensor_thread_id;
     pthread_create(&sensor_thread_id, NULL, sensorModule, NULL);
 
-    /* Generate 3D Viewer. */
-    glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-
-    pthread_t viewer_thread_id;
-    pthread_create(&viewer_thread_id, NULL, viewerModule, NULL);
-
     /* Logging system will be here. */
     pthread_t logging_thread_id;
     pthread_create(&logging_thread_id, NULL, loggingModule, NULL);
@@ -26,7 +19,12 @@ int main(int argc, char** argv)
     pthread_t algorithm_thread_id;
     pthread_create(&algorithm_thread_id, NULL, algorithmModule, NULL);
 
-    printf("Test Github Push\n");
+    /* Generate 3D Viewer. */
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+
+    pthread_t viewer_thread_id;
+    pthread_create(&viewer_thread_id, NULL, viewerModule, NULL);
 
     pthread_join(sensor_thread_id, NULL);
     pthread_join(viewer_thread_id, NULL);
