@@ -5,7 +5,6 @@ extern pthread_cond_t cond;
 extern int iEndOfSavingData;
  
 extern int iNumOfPoint;
-extern AstraData_t* pstAstraData;
 extern char* pcSensorData;
 extern int astra_width;
 extern int astra_height;
@@ -44,6 +43,7 @@ void receive_data(){
         pthread_mutex_unlock(&mutex);
         return;
     }
+    
     memcpy(colorData, pcSensorData + sizeof(int) * 2 + sizeof(int16_t) * width * height, sizeof(uint8_t) * width * height * 3);
 
     pthread_mutex_unlock(&mutex);
@@ -68,13 +68,6 @@ void receive_data(){
                     float g = colorData[colorIndex + 1] / 255.0f;
                     float b = colorData[colorIndex + 2] / 255.0f;
 
-                    // pstAstraData[index].fX = x_pos;
-                    // pstAstraData[index].fY = -y_pos;
-                    // pstAstraData[index].fZ = -z;
-                    // pstAstraData[index].fR = r;
-                    // pstAstraData[index].fG = g;
-                    // pstAstraData[index].fB = b;
-
                     glColor3f(r, g, b);
                     glVertex3f(x_pos, -y_pos, -z_pos);
                     // printf("%lf %lf %lf %lf %lf %lf\n", x_pos, -y_pos, -z, r, g, b);
@@ -89,5 +82,6 @@ void* loggingModule(void* id){
 
     while(1){
         // printf("Logging System Will Be Implemented Here.\n");
+        receive_data();
     }
 }

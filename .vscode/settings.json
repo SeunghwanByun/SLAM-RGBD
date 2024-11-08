@@ -8,10 +8,10 @@
         "viewer.h": "c",
         "connectastra.h": "c",
         "main.h": "c",
-        "stdlib.h": "c"
-    }
+        "stdlib.h": "c",
+        "loggingmodule.h": "c"
+    },
+    "editor.formatOnSave": true,
+    // "editor.formatOnType": true,
+    // "editor.formatOnPaste": true,
 }
-
-"editor.formatOnSave": true,
-"editor.formatOnType": true,
-"editor.formatOnPaste": true,
