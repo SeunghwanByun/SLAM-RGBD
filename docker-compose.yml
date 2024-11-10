@@ -1,0 +1,10 @@
+version: '3'
+services:
+  astra_drone_slam:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./:Project/Astra-Drone_SLAM/
+    working_dir: /Project/Astra-Drone-SLAM
+    command: ./Release/Youth
