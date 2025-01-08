@@ -1,6 +1,6 @@
 # SLAM-RGBD
 
-This repository will include source code about drone with indoor SLAM algorithm using astra-depth-camera.
+This repository will include source code about indoor SLAM algorithm using astra-depth-camera.
 
 This code flow will be like under explanation.
 
