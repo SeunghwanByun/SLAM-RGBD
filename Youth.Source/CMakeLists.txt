@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.16)
 
 project(ProjectYouth)
 
+# Set Debugging Symbols
+# set(CMAKE_BUILD_TYPE Debug)
+
 if(WIN32)
     message("Building on Windows")
     # Windows-specific settings
