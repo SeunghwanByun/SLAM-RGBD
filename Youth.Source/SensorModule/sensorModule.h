@@ -6,4 +6,10 @@
 
 void* sensorModule(void* id);
 
+// Initialize Sensor Module
+void initSensorModule();
+
+// Stop Sensor Module
+void stopSensorModule();
+
 #endif // SENSOR_MODULE_H

@@ -1,163 +1,386 @@
-// #include "sensorModule.h"
+// // #include "sensorModule.h"
 
-// // AstraContext_t* context;
+// // // AstraContext_t* context;
 
-// void* sensorModule(void* id){
-//     // printf("Initializing Astra...\n");
-//     // context = InitializeAstraObj();
+// // void* sensorModule(void* id){
+// //     // printf("Initializing Astra...\n");
+// //     // context = InitializeAstraObj();
 
-//     while(1){
-//     printf("Test\n");
-//         connectAstra(context);
-//     }
+// //     while(1){
+// //     printf("Test\n");
+// //         connectAstra(context);
+// //     }
+// // }
+// // Connect Astra
+// // Astra Orbbec RGB-D 카메라 데이터 수집 스레드 구현 (C 언어 버전)
+
+// #include <stdio.h>
+// #include <stdlib.h>
+// #include <stdint.h>
+// #include <pthread.h>
+// #include <string.h>
+// #include <astra/capi/astra.h>
+
+// #define MAX_FRAME_QUEUE_SIZE 10
+
+// // RGB-D 프레임 구조체 정의
+// typedef struct {
+//     uint8_t* colorData;
+//     uint16_t* depthData;
+//     int width;
+//     int height;
+// } RGBDFrame;
+
+// // Thread Safe Queue
+// pthread_mutex_t frameQueueMutex = PTHREAD_MUTEX_INITIALIZER;
+// pthread_cond_t frameQueueCond = PTHREAD_COND_INITIALIZER;
+// RGBDFrame frameQueue[MAX_FRAME_QUEUE_SIZE];
+// int front = 0, rear = 0;
+
+// ///////////////////
+// // Implement Queue
+
+// // Check Empty Queue
+// int is_queue_empty() {
+//     return front == rear;
 // }
-// Connect Astra
-// Astra Orbbec RGB-D 카메라 데이터 수집 스레드 구현 (C 언어 버전)
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
+// // Check Full Queue
+// int is_queue_full() {
+//     return ((rear + 1) % MAX_FRAME_QUEUE_SIZE) == front;
+// }
+
+// // Enqueue Frame
+// void enqueue_frame(RGBDFrame frame) {
+//     pthread_mutex_lock(&frameQueueMutex);
+//     while (is_queue_full()) {
+//         pthread_cond_wait(&frameQueueCond, &frameQueueMutex);
+//     }
+//     frameQueue[rear] = frame;
+//     rear = (rear + 1) % MAX_FRAME_QUEUE_SIZE;
+//     pthread_cond_signal(&frameQueueCond);
+//     pthread_mutex_unlock(&frameQueueMutex);
+// }
+
+// // Dequeue Frame
+// int dequeue_frame(RGBDFrame* frame) {
+//     pthread_mutex_lock(&frameQueueMutex);
+//     while (is_queue_empty()) {
+//         pthread_cond_wait(&frameQueueCond, &frameQueueMutex);
+//     }
+//     *frame = frameQueue[front];
+//     front = (front + 1) % MAX_FRAME_QUEUE_SIZE;
+//     pthread_cond_signal(&frameQueueCond);
+//     pthread_mutex_unlock(&frameQueueMutex);
+//     return 1;
+// }
+
+// // Free Memory
+// void free_frame(RGBDFrame* frame) {
+//     if (frame->colorData) free(frame->colorData);
+//     if (frame->depthData) free(frame->depthData);
+// }
+
+// // Connect Astra Function
+// // 센서 스레드 함수
+// void* sensorModule(void* id) {
+//     astra_initialize();
+
+//     astra_streamsetconnection_t streamSet;
+//     astra_reader_t reader;
+//     astra_status_t status;
+
+//     status = astra_reader_create("device/default", &reader);
+//     if (status != ASTRA_STATUS_SUCCESS) {
+//         fprintf(stderr, "[Error] Failed to create Astra reader.\n");
+//         pthread_exit(NULL);
+//     }
+
+//     astra_depthstream_t depthStream;
+//     astra_colorstream_t colorStream;
+//     astra_reader_get_depthstream(reader, &depthStream);
+//     astra_reader_get_colorstream(reader, &colorStream);
+
+//     astra_stream_start(depthStream);
+//     astra_stream_start(colorStream);
+
+//     while (1) {
+//         astra_reader_frame_t frame;
+//         status = astra_reader_open_frame(reader, 0, &frame);
+//         if (status != ASTRA_STATUS_SUCCESS) {
+//             fprintf(stderr, "[Error] Failed to open Astra frame.\n");
+//             continue;
+//         }
+
+//         astra_depthframe_t depthFrame;
+//         astra_colorframe_t colorFrame;
+
+//         astra_frame_get_depthframe(frame, &depthFrame);
+//         astra_frame_get_colorframe(frame, &colorFrame);
+
+//         if (!depthFrame || !colorFrame) {
+//             fprintf(stderr, "[Warning] Invalid frame received.\n");
+//             astra_reader_close_frame(&frame);
+//             continue;
+//         }
+
+//         int width = 0, height = 0;
+
+//         const uint16_t* depthData;
+//         const uint8_t* colorData;
+//         astra_depthframe_get_data_ptr(depthFrame, &depthData, &width);
+//         astra_colorframe_get_data_ptr(colorFrame, &colorData, &width);
+
+//         RGBDFrame rgbdFrame;
+//         rgbdFrame.width = width;
+//         rgbdFrame.height = height;
+//         rgbdFrame.colorData = (uint8_t*)malloc(width * height * 3);
+//         rgbdFrame.depthData = (uint16_t*)malloc(width * height * sizeof(uint16_t));
+
+//         if (!rgbdFrame.colorData || !rgbdFrame.depthData) {
+//             fprintf(stderr, "[Error] Memory allocation failed.\n");
+//             free_frame(&rgbdFrame);
+//             astra_reader_close_frame(&frame);
+//             continue;
+//         }
+
+//         memcpy(rgbdFrame.colorData, colorData, width * height * 3);
+//         memcpy(rgbdFrame.depthData, depthData, width * height * sizeof(uint16_t));
+
+//         enqueue_frame(rgbdFrame);
+//         printf("[Sensor Thread] Frame captured: %dx%d\n", width, height);
+
+//         astra_reader_close_frame(&frame);
+//     }
+
+//     astra_terminate();
+//     pthread_exit(NULL);
+// }
+
+// pthread_t sensor_thread_id;
+// void initSensorModule(){
+//   pthread_create(&sensor_thread_id, NULL, sensorModule, NULL);
+// }
+
+#include "sensorModule.h"
+#include "astra_wrapper.h"
 #include <pthread.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
-#include <astra/capi/astra.h>
+#include <mqueue.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <errno.h>
+#include <unistd.h>
 
-#define MAX_FRAME_QUEUE_SIZE 10
+// Message Queue Name
+#define MQ_NAME "/sensor_viewer_queue"
+#define MAX_MSG_SIZE 8192 // 메세지 최대 크기, 필요에 따라 조정 가능
 
-// RGB-D 프레임 구조체 정의
+// Sensor Context
+AstraContext_t* sensorContext = NULL;
+
+// Message Queue Handle
+mqd_t mqSend = -1;
+
+#define MSG_TYPE_METADATA 1
+#define MSG_TYPE_DEPTH_DATA 2
+#define MSG_TYPE_COLOR_DATA 3
+
+// Sensor Data Structure
 typedef struct {
-    uint8_t* colorData;
-    uint16_t* depthData;
-    int width;
-    int height;
-} RGBDFrame;
+  int msgType; // 메세지 타입
+  int width;  // 이미지 너비
+  int height; // 이미지 높이
+  int chunkIndex; // 청크 인덱스
+  int totalChunks; // 전체 청크 수
+  int dataSize; // 이 메세지의 데이터 크기
+  int frameId; // 프레임 식별자
+}MessageHeader;
 
-// Thread Safe Queue
-pthread_mutex_t frameQueueMutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t frameQueueCond = PTHREAD_COND_INITIALIZER;
-RGBDFrame frameQueue[MAX_FRAME_QUEUE_SIZE];
-int front = 0, rear = 0;
+// Thread Control Variable;
+static int sensorIsRunning = 1;
 
-///////////////////
-// Implement Queue
+void* sensorLoop(void* arg){
+  printf("Sensor thread started...\n");
 
-// Check Empty Queue
-int is_queue_empty() {
-    return front == rear;
-}
+  // Message Queue Feature Setting
+  struct mq_attr attr;
+  attr.mq_flags = 0;
+  attr.mq_maxmsg = 10;
+  attr.mq_msgsize = MAX_MSG_SIZE;
+  attr.mq_curmsgs = 0;
 
-// Check Full Queue
-int is_queue_full() {
-    return ((rear + 1) % MAX_FRAME_QUEUE_SIZE) == front;
-}
+  // Generate Message Queue
+  mqSend = mq_open(MQ_NAME, O_CREAT | O_WRONLY, 0644, &attr);
+  if(mqSend == (mqd_t) - 1){
+    perror("mq_open send");
+    return NULL;
+  }
 
-// Enqueue Frame
-void enqueue_frame(RGBDFrame frame) {
-    pthread_mutex_lock(&frameQueueMutex);
-    while (is_queue_full()) {
-        pthread_cond_wait(&frameQueueCond, &frameQueueMutex);
-    }
-    frameQueue[rear] = frame;
-    rear = (rear + 1) % MAX_FRAME_QUEUE_SIZE;
-    pthread_cond_signal(&frameQueueCond);
-    pthread_mutex_unlock(&frameQueueMutex);
-}
+  // Initialize Sensor
+  printf("Initializing Astra sensor ...\n");
+  sensorContext = InitializeAstraObj();
+  
+  if(!sensorContext){
+    printf("Failed to initialize Astra sensor\n");
+    mq_close(mqSend);
+    mq_unlink(MQ_NAME);
+    return NULL;
+  }
 
-// Dequeue Frame
-int dequeue_frame(RGBDFrame* frame) {
-    pthread_mutex_lock(&frameQueueMutex);
-    while (is_queue_empty()) {
-        pthread_cond_wait(&frameQueueCond, &frameQueueMutex);
-    }
-    *frame = frameQueue[front];
-    front = (front + 1) % MAX_FRAME_QUEUE_SIZE;
-    pthread_cond_signal(&frameQueueCond);
-    pthread_mutex_unlock(&frameQueueMutex);
-    return 1;
-}
+  // 데이터 청크를 위한 버퍼 할당
+  char* msgBuffer = (char*)malloc(MAX_MSG_SIZE);
+  if(!msgBuffer){
+    perror("malloc message buffer");
+    TerminateAstraObj(sensorContext);
+    mq_close(mqSend);
+    mq_unlink(MQ_NAME);
+    return NULL;
+  }
 
-// Free Memory
-void free_frame(RGBDFrame* frame) {
-    if (frame->colorData) free(frame->colorData);
-    if (frame->depthData) free(frame->depthData);
-}
+  int frameId = 0;
 
-// Connect Astra Function
-// 센서 스레드 함수
-void* sensorModule(void* id) {
-    astra_initialize();
+  // Main Loop
+  while(sensorIsRunning){
+    int width, height;
 
-    astra_streamsetconnection_t streamSet;
-    astra_reader_t reader;
-    astra_status_t status;
+    // Get Data from Sensor
+    const int16_t* depthData = GetDepthDataAstraOpenGL(sensorContext, &width, &height);
+    const uint8_t* colorData = GetColorDataAstraOpenGL(sensorContext, &width, &height);
 
-    status = astra_reader_create("device/default", &reader);
-    if (status != ASTRA_STATUS_SUCCESS) {
-        fprintf(stderr, "[Error] Failed to create Astra reader.\n");
-        pthread_exit(NULL);
-    }
+    if(depthData && colorData){
+      frameId++;
 
-    astra_depthstream_t depthStream;
-    astra_colorstream_t colorStream;
-    astra_reader_get_depthstream(reader, &depthStream);
-    astra_reader_get_colorstream(reader, &colorStream);
+      // 1. 메타데이터 메세지 전송
+      MessageHeader* header = (MessageHeader*)msgBuffer;
+      header->msgType = MSG_TYPE_METADATA;
+      header->width = width;
+      header->height = height;
+      header->chunkIndex = 0;
+      header->totalChunks = 0; // 메타데이터에는 의미 없음
+      header->dataSize = 0;
+      header->frameId = frameId;
 
-    astra_stream_start(depthStream);
-    astra_stream_start(colorStream);
+      if(mq_send(mqSend, msgBuffer, sizeof(MessageHeader), 0) == -1){
+        perror("mq_send metadata");
+        continue;
+      }
 
-    while (1) {
-        astra_reader_frame_t frame;
-        status = astra_reader_open_frame(reader, 0, &frame);
-        if (status != ASTRA_STATUS_SUCCESS) {
-            fprintf(stderr, "[Error] Failed to open Astra frame.\n");
-            continue;
+      // 2. 깊이 데이터 청크 전송
+      int depthDataSize = width * height * sizeof(int16_t);
+      int maxDataPerMsg = MAX_MSG_SIZE - sizeof(MessageHeader);
+      int totalDepthChunks = (depthDataSize + maxDataPerMsg - 1) / maxDataPerMsg;
+
+      for(int i = 0; i < totalDepthChunks; i++){
+        header->msgType = MSG_TYPE_DEPTH_DATA;
+        header->chunkIndex = i;
+        header->totalChunks = totalDepthChunks;
+        header->frameId = frameId;
+
+        int offset = i * maxDataPerMsg;
+        int chunkSize = (i == totalDepthChunks - 1) ? (depthDataSize - offset) : maxDataPerMsg;
+
+        header->dataSize = chunkSize;
+
+        // 데이터 복사
+        memcpy(msgBuffer + sizeof(MessageHeader), ((char*)depthData) + offset, chunkSize);
+
+        if(mq_send(mqSend, msgBuffer, sizeof(MessageHeader) + chunkSize, 0) == -1){
+          perror("mq_send depth chunk");
+          break;
         }
+      }
 
-        astra_depthframe_t depthFrame;
-        astra_colorframe_t colorFrame;
+      // 3. 색상 데이터 청크 전송
+      int colorDataSize = width * height * 3 * sizeof(uint8_t);
+      int totalColorChunks = (colorDataSize + maxDataPerMsg - 1) / maxDataPerMsg;
 
-        astra_frame_get_depthframe(frame, &depthFrame);
-        astra_frame_get_colorframe(frame, &colorFrame);
+      for(int i = 0; i < totalColorChunks; i++){
+        header->msgType = MSG_TYPE_COLOR_DATA;
+        header->chunkIndex = i;
+        header->totalChunks = totalColorChunks;
+        header->frameId = frameId;
 
-        if (!depthFrame || !colorFrame) {
-            fprintf(stderr, "[Warning] Invalid frame received.\n");
-            astra_reader_close_frame(&frame);
-            continue;
+        int offset = i * maxDataPerMsg;
+        int chunkSize = (i == totalColorChunks - 1) ? (colorDataSize - offset) : maxDataPerMsg;
+
+        header->dataSize = chunkSize;
+
+        // 데이터 복사
+        memcpy(msgBuffer + sizeof(MessageHeader), ((char*)colorData) + offset, chunkSize);
+
+        if(mq_send(mqSend, msgBuffer, sizeof(MessageHeader) + chunkSize, 0) == -1){
+          perror("mq_send color chunk");
+          break;
         }
-
-        int width = 0, height = 0;
-
-        const uint16_t* depthData;
-        const uint8_t* colorData;
-        astra_depthframe_get_data_ptr(depthFrame, &depthData, &width);
-        astra_colorframe_get_data_ptr(colorFrame, &colorData, &width);
-
-        RGBDFrame rgbdFrame;
-        rgbdFrame.width = width;
-        rgbdFrame.height = height;
-        rgbdFrame.colorData = (uint8_t*)malloc(width * height * 3);
-        rgbdFrame.depthData = (uint16_t*)malloc(width * height * sizeof(uint16_t));
-
-        if (!rgbdFrame.colorData || !rgbdFrame.depthData) {
-            fprintf(stderr, "[Error] Memory allocation failed.\n");
-            free_frame(&rgbdFrame);
-            astra_reader_close_frame(&frame);
-            continue;
-        }
-
-        memcpy(rgbdFrame.colorData, colorData, width * height * 3);
-        memcpy(rgbdFrame.depthData, depthData, width * height * sizeof(uint16_t));
-
-        enqueue_frame(rgbdFrame);
-        printf("[Sensor Thread] Frame captured: %dx%d\n", width, height);
-
-        astra_reader_close_frame(&frame);
+      }
     }
+    //   // Prepare data for sending to Message Queue
+    //   int depthDataSize = width * height * sizeof(int16_t);
+    //   int colorDataSize = width * height * 3 * sizeof(uint8_t);
+    //   int totalDataSize = sizeof(SensorDataMsg) + depthDataSize + colorDataSize;
 
-    astra_terminate();
-    pthread_exit(NULL);
+    //   if(totalDataSize > MAX_MSG_SIZE){
+    //     printf("Warning: Data size exceeds max message size. Consider reducing resolution or increasing MAX_MSG_SIZE.\n");
+    //     // 필요한 경우 데이터를 여러 메시지로 분할하거나 크기 조정
+    //     continue;
+    //   }
+
+    //   // Generate Message Buffer.
+    //   char* msgBuffer = (char*)malloc(totalDataSize);
+    //   if(!msgBuffer){
+    //     printf("Memory allocation failed\n");
+    //     continue;
+    //   }
+
+    //   // Header Information Setting
+    //   SensorDataMsg* header = (SensorDataMsg*)msgBuffer;
+    //   header->width = width;
+    //   header->height = height;
+    //   header->dataSize = depthDataSize + colorDataSize;
+
+    //   // Copy Data
+    //   char* dataPtr = msgBuffer + sizeof(SensorDataMsg);
+    //   memcpy(dataPtr, depthData, depthDataSize);
+    //   dataPtr += depthDataSize;
+    //   memcpy(dataPtr, colorData, colorDataSize);
+
+    //   // Send Data to Message Queue
+    //   if(mq_send(mqSend, msgBuffer, totalDataSize, 0) == -1){
+    //     perror("mq_send");
+    //   }
+
+    //   free(msgBuffer);
+    // }
+
+    // Data Collection Speed Control (About 30 FPS)
+    usleep(33333);
+  }
+
+  // 메모리 해제
+  free(msgBuffer);
+
+  // Terminate Sensor
+  TerminateAstraObj(sensorContext);
+
+  // Close Message Queue
+  mq_close(mqSend);
+
+  printf("Sensor thread termination\n");
+  return NULL;
 }
 
 pthread_t sensor_thread_id;
+
 void initSensorModule(){
-  pthread_create(&sensor_thread_id, NULL, sensorModule, NULL);
+  sensorIsRunning = 1;
+  pthread_create(&sensor_thread_id, NULL, sensorLoop, NULL);
+}
+
+void stopSensorModule(){
+  sensorIsRunning = 0;
+  pthread_join(sensor_thread_id, NULL);
+  mq_unlink(MQ_NAME); // Eliminate Message Queue
 }

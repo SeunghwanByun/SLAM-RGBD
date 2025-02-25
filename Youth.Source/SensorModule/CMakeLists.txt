@@ -1,8 +1,8 @@
 # CMakeLists.txt of SensorModule
 
 add_library(SensorModuleLib
-    # astra_wrapper.cpp
-    # astra_wrapper.h
+    astra_wrapper.cpp
+    astra_wrapper.h
     connectAstra.c
     connectAstra.h
     sensorModule.c
@@ -21,6 +21,7 @@ target_link_libraries(SensorModuleLib
     astra_core
     stdc++
     pthread
+    rt
 )
 
 # Link Astra C API Library

@@ -1,7 +1,7 @@
 # ViewerModule 라이브러리 생성
 add_library(ViewerModuleLib
-    astra_wrapper.cpp
-    astra_wrapper.h
+    # astra_wrapper.cpp
+    # astra_wrapper.h
     viewerModule.c
     viewerModule.h
 )
@@ -37,6 +37,7 @@ target_link_libraries(ViewerModuleLib
     X11
     stdc++
     pthread
+    rt
 )
 
 # 컴파일 옵션 설정
