@@ -11,13 +11,6 @@
 #include <stdio.h>
 #include <unistd.h>
 
-
-// #include "astra_wrapper.h"
-// #include <pthread.h>
-// #include <GL/glew.h>
-// #include <GLFW/glfw3.h>
-// #include <stdio.h>
-
 // Monitor Resolution Information
 #ifdef _WIN32
 #include <windows.h>
