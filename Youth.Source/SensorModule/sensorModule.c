@@ -152,43 +152,6 @@ void* sensorLoop(void* arg){
         }
       }
     }
-    //   // Prepare data for sending to Message Queue
-    //   int depthDataSize = width * height * sizeof(int16_t);
-    //   int colorDataSize = width * height * 3 * sizeof(uint8_t);
-    //   int totalDataSize = sizeof(SensorDataMsg) + depthDataSize + colorDataSize;
-
-    //   if(totalDataSize > MAX_MSG_SIZE){
-    //     printf("Warning: Data size exceeds max message size. Consider reducing resolution or increasing MAX_MSG_SIZE.\n");
-    //     // 필요한 경우 데이터를 여러 메시지로 분할하거나 크기 조정
-    //     continue;
-    //   }
-
-    //   // Generate Message Buffer.
-    //   char* msgBuffer = (char*)malloc(totalDataSize);
-    //   if(!msgBuffer){
-    //     printf("Memory allocation failed\n");
-    //     continue;
-    //   }
-
-    //   // Header Information Setting
-    //   SensorDataMsg* header = (SensorDataMsg*)msgBuffer;
-    //   header->width = width;
-    //   header->height = height;
-    //   header->dataSize = depthDataSize + colorDataSize;
-
-    //   // Copy Data
-    //   char* dataPtr = msgBuffer + sizeof(SensorDataMsg);
-    //   memcpy(dataPtr, depthData, depthDataSize);
-    //   dataPtr += depthDataSize;
-    //   memcpy(dataPtr, colorData, colorDataSize);
-
-    //   // Send Data to Message Queue
-    //   if(mq_send(mqSend, msgBuffer, totalDataSize, 0) == -1){
-    //     perror("mq_send");
-    //   }
-
-    //   free(msgBuffer);
-    // }
 
     // Data Collection Speed Control (About 30 FPS)
     usleep(33333);
