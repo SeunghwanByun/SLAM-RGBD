@@ -8,8 +8,8 @@
 int main(int argc, char** argv)
 {
     /* Connect sensor and get sensor data. */
-    // pthread_t sensor_thread_id;
-    // pthread_create(&sensor_thread_id, NULL, sensorModule, NULL);
+    pthread_t sensor_thread_id;
+    pthread_create(&sensor_thread_id, NULL, sensorModule, NULL);
 
     /* Logging system will be here. */
     // pthread_t logging_thread_id;

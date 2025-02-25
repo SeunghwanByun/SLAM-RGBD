@@ -1,5 +1,9 @@
 #include "viewerModule.h"
 #include "astra_wrapper.h"
+#include <pthread.h>
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+#include <stdio.h>
 
 // Monitor Resolution Information
 #ifdef _WIN32
@@ -15,11 +19,12 @@ float angleX = 0.0f;
 float angleY = 0.0f;
 float distance = 2.0f;
 int lastMouseX = 0, lastMouseY = 0;
-int zoom = 1.0f;
+float zoom = 1.0f;
 int isDragging = 0;
 
 // extern AstraContext_t* context;
 AstraContext_t* context;
+GLFWwindow* window;
 
 void initOpenGL()
 {
@@ -29,7 +34,6 @@ void initOpenGL()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glBindTexture(GL_TEXTURE_2D, 0);
 }
-
 
 void display_3d_color(){
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -42,44 +46,8 @@ void display_3d_color(){
     glScalef(zoom, zoom, zoom);
 
     glBegin(GL_POINTS);
-
-    // Receive buffer from sensor module
     
     int width, height;
-    // static int iTestCnt = 0;
-    // int16_t* depthData;
-    // uint8_t* colorData;
-
-    // pthread_mutex_lock(&mutex);
-    // while(!iEndOfSavingData){
-    //     pthread_cond_wait(&cond, &mutex);
-    // }
-
-    // memcpy(&width, pcSensorData, sizeof(int));
-    // memcpy(&height, pcSensorData + sizeof(int), sizeof(int));
-
-    // // depthData는 크기가 int16_t이므로 그 크기에 맞게 복사
-    // depthData = (int16_t*)malloc(sizeof(int16_t) * width * height);
-    // if (depthData == NULL) {
-    //     printf("malloc error for depthData\n");
-    //     pthread_mutex_unlock(&mutex);
-    //     return;
-    // }
-
-    // memcpy(depthData, pcSensorData + sizeof(int) * 2, sizeof(int16_t) * width * height);
-
-    // // colorData는 크기가 uint8_t이므로 그 크기에 맞게 복사
-    // colorData = (uint8_t*)malloc(sizeof(uint8_t) * width * height * 3);
-    // if (colorData == NULL) {
-    //     printf("malloc error for colorData\n");
-    //     free(depthData);  // 이미 할당된 depthData 메모리 해제
-    //     pthread_mutex_unlock(&mutex);
-    //     return;
-    // }
-    // memcpy(colorData, pcSensorData + sizeof(int) * 2 + sizeof(int16_t) * width * height, sizeof(uint8_t) * width * height * 3);
-
-    // pthread_mutex_unlock(&mutex);
-    
     const int16_t* depthData = GetDepthDataAstraOpenGL(context, &width, &height);
     const uint8_t* colorData = GetColorDataAstraOpenGL(context, &width, &height);
     if(depthData && colorData){
@@ -102,154 +70,154 @@ void display_3d_color(){
                     float g = colorData[colorIndex + 1] / 255.0f;
                     float b = colorData[colorIndex + 2] / 255.0f;
 
-                    // pstAstraData[index].fX = x_pos;
-                    // pstAstraData[index].fY = -y_pos;
-                    // pstAstraData[index].fZ = -z;
-                    // pstAstraData[index].fR = r;
-                    // pstAstraData[index].fG = g;
-                    // pstAstraData[index].fB = b;
-
                     glColor3f(r, g, b);
                     glVertex3f(x_pos, -y_pos, -z_pos);
-                    // printf("%lf %lf %lf %lf %lf %lf\n", x_pos, -y_pos, -z, r, g, b);
                 }
             }
         }
     }
-    
-    // // int width, height;
-    // for(int i = 0; i < iNumOfPoint; i++){
-    //     float x_pos = pstAstraData[i].fX;
-    //     float y_pos = pstAstraData[i].fY;
-    //     float z_pos = pstAstraData[i].fZ;
-
-    //     float r = pstAstraData[i].fR;
-    //     float g = pstAstraData[i].fG;
-    //     float b = pstAstraData[i].fB;
-
-    //     glColor3f(r, g, b);
-    //     glVertex3f(x_pos, y_pos, z_pos);
-    // }
 
     glEnd();
-    glutSwapBuffers();
+    glfwSwapBuffers(window);
 }
 
-void idle()
+void error_callback(int error, const char* description)
 {
-    glutPostRedisplay();
+    fprintf(stderr, "Error: %s\n", description);
 }
 
-void keyboard(unsigned char key, int x, int y)
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    switch (key)
-    {
-        case 27: // ESC 키
-            TerminateAstraObj(context);
-            exit(0);
-            break;
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        TerminateAstraObj(context);
+        glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
 }
 
-// Mouse click event
-void mouse(int button, int state, int x, int y) {
-    if (button == GLUT_LEFT_BUTTON) {
-        if (state == GLUT_DOWN) {
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    if (button == GLFW_MOUSE_BUTTON_LEFT) {
+        if (action == GLFW_PRESS) {
             isDragging = 1;
-            lastMouseX = x;
-            lastMouseY = y;
-        } else if (state == GLUT_UP) {
+            glfwGetCursorPos(window, (double*)&lastMouseX, (double*)&lastMouseY);
+        } else if (action == GLFW_RELEASE) {
             isDragging = 0;
         }
     }
 }
 
-// Mouse moving event (drag)
-void motion(int x, int y) {
+void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
+{
     if (isDragging) {
-        int dx = x - lastMouseX;
-        int dy = y - lastMouseY;
+        int dx = xpos - lastMouseX;
+        int dy = ypos - lastMouseY;
 
         angleX += dy * 0.05f;
         angleY += dx * 0.05f;
 
-        lastMouseX = x;
-        lastMouseY = y;
-
-        glutPostRedisplay();
+        lastMouseX = xpos;
+        lastMouseY = ypos;
     }
 }
 
-void mouseWheel(int button, int dir, int x, int y){
-    if(dir > 0){
-        /* To do */
-
-    }else {
-        /* To do */
-    }
-}
-
-void reshape(int w, int h)
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-    glViewport(0, 0, w, h);
+    if (yoffset > 0) {
+        // Zoom in
+        zoom *= 1.1f;
+    } else {
+        // Zoom out
+        zoom *= 0.9f;
+    }
+}
+
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+    glViewport(0, 0, width, height);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(45.0, (double)w / (double)h, 0.1, 100.0);
+    gluPerspective(45.0, (double)width / (double)height, 0.1, 100.0);
     glMatrixMode(GL_MODELVIEW);
 }
 
 void* viewerModule(void* id){
-    printf("Initializing OpenGL...\n");
-    // glutInit(&argc, argv);
-    // glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-
+    printf("Initializing GLFW...\n");
+    
+    if (!glfwInit()) {
+        fprintf(stderr, "Failed to initialize GLFW\n");
+        return NULL;
+    }
+    
+    glfwSetErrorCallback(error_callback);
+    
     // Get Monitor Resolution
+    int screenWidth, screenHeight;
 #ifdef _WIN32
-    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+    screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    screenHeight = GetSystemMetrics(SM_CYSCREEN);
 #elif __linux__
     Display* d = XOpenDisplay(NULL);
     Screen* s = DefaultScreenOfDisplay(d);
-    int32_t screenWidth = s->width;
-    int32_t screenHeight = s->height;
-#endif // #ifdef _WIN32
+    screenWidth = s->width;
+    screenHeight = s->height;
+    XCloseDisplay(d);
+#endif
 
-    glutInitWindowSize(screenWidth, screenHeight);
-    glutCreateWindow("3D Viewer");
-
-    glewInit();
+    // GLFW window creation
+    window = glfwCreateWindow(screenWidth, screenHeight, "3D Viewer", NULL, NULL);
+    if (!window) {
+        fprintf(stderr, "Failed to create GLFW window\n");
+        glfwTerminate();
+        return NULL;
+    }
+    
+    glfwMakeContextCurrent(window);
+    glfwSetKeyCallback(window, key_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetCursorPosCallback(window, cursor_position_callback);
+    glfwSetScrollCallback(window, scroll_callback);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    
+    // Initialize GLEW
+    GLenum err = glewInit();
+    if (err != GLEW_OK) {
+        fprintf(stderr, "GLEW initialization error: %s\n", glewGetErrorString(err));
+        glfwTerminate();
+        return NULL;
+    }
+    
     initOpenGL();
-  
+    
     printf("Initializing Astra...\n");
     context = InitializeAstraObj();
 
 #define EXEC_MODE 0 // 0 : OpenGL, 1 : WebGL
 #if EXEC_MODE == 0
-    while(1){
-        /* Main Viewer Code. */
-        glutDisplayFunc(display_3d_color);
-        glutIdleFunc(idle);
-        glutReshapeFunc(reshape);
-        glutKeyboardFunc(keyboard);
-        glutMouseFunc(mouse);
-        glutMotionFunc(motion);
-        glutMouseWheelFunc(mouseWheel);
-        glutMainLoop();
+    // Set up initial perspective
+    int width, height;
+    glfwGetFramebufferSize(window, &width, &height);
+    framebuffer_size_callback(window, width, height);
+    
+    // Main loop
+    while (!glfwWindowShouldClose(window)) {
+        display_3d_color();
+        glfwPollEvents();
     }
+    
+    glfwDestroyWindow(window);
+    glfwTerminate();
 #elif EXEC_MODE == 1
-        // 컬러 데이터와 깊이 데이터 모두를 생성하여 사용하거나 출력
-        // const char* depthData = GetDepthDataAstraWebGL(context);
-        const char* colorData = GetColorDataAstraWebGL(context);
+    const char* colorData = GetColorDataAstraWebGL(context);
 
-        // 데이터를 필요한 대로 처리합니다 (예: 콘솔 출력 또는 반환)
-        if (colorData) {
-            printf("%d\n", colorData);
-        }
+    if (colorData) {
+        printf("%d\n", colorData);
+    }
+#endif
 
-        // if (depthData) {
-        //     std::cout << depthData << std::endl;
-        // }
-    #endif
+    return NULL;
+}
 
-        // TerminateAstraObj(context);
+pthread_t viewer_thread_id;
+void initViewerModule(){
+    pthread_create(&viewer_thread_id, NULL, viewerModule, NULL);
 }
