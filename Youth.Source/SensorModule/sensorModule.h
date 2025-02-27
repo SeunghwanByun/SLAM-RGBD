@@ -9,4 +9,6 @@ void initSensorModule();
 // Stop Sensor Module
 void stopSensorModule();
 
+int isSensorModuleRunning(void);
+
 #endif // SENSOR_MODULE_H
