@@ -1,13 +1,36 @@
 #ifndef LOGGING_MODULE_H
 #define LOGGING_MODULE_h
 
-// #include "../main.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#include <pthread.h>
-#include <stdio.h>
-#include <stdint.h>
+// Initialize Logging Module
+void initLoggingModule();
 
-void receive_data();
-void* loggingModule(void* id);
+// Stop Logging Module
+void stopLoggingModule();
+
+// Start Record with file name
+int startRecording(const char* filename);
+
+// Stop Recording
+void stopRecording();
+
+// Start Logging file
+int startPlayback(const char* filename);
+
+// Stop Logging file
+void stopRecording();
+
+// Check Play Status
+int isPlayingBack();
+
+// Check Logging Module Execution Status 
+int isLoggingModuleRunning();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // LOGGING_MODULE_H
