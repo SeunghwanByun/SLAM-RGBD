@@ -182,3 +182,11 @@ void stopSensorModule(){
   pthread_join(sensor_thread_id, NULL);
   mq_unlink(MQ_NAME); // Eliminate Message Queue
 }
+
+int isSensorModuleRunning(void){
+  return sensorIsRunning;
+}
+
+void requestStopSensorModule(){
+  sensorIsRunning = 0;
+}

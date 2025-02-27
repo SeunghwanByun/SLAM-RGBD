@@ -27,6 +27,9 @@
 #define MSG_TYPE_DEPTH_DATA 2
 #define MSG_TYPE_COLOR_DATA 3
 
+// viewerModule.c 에 구현 추가
+static ExitCallbackFunc exitCallback = NULL;
+
 // Data Structure for receiving from Message Queue
 typedef struct{
   int msgType; // 메세지 타입
@@ -327,6 +330,16 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
     glfwSetWindowShouldClose(window, GLFW_TRUE);
   }
+
+  // 외부 프로그램에 종료 신호 보내기 (전역변수나 신호 사용)
+  if(exitCallback){
+    exitCallback(); // 메인 프로그램에 등록된 콜백 호출
+  }
+}
+
+
+void setExitCallback(ExitCallbackFunc callback){
+  exitCallback = callback;
 }
 
 // Mouse Button Callback
@@ -379,10 +392,19 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
   glMatrixMode(GL_MODELVIEW);
 }
 
+void window_close_callback(GLFWwindow* window){
+  viewerIsRunning = 0;
+
+  // 외부 프로그램에 종료 신호 보내기
+  if(exitCallback){
+    exitCallback();
+  }
+}
+
 // Viewer Thread Function
 void* viewerModule(void* id){
   printf("Initializing GLFW...\n");
-    
+
   if (!glfwInit()) {
     fprintf(stderr, "Failed to initialize GLFW\n");
     return NULL;
@@ -405,6 +427,9 @@ void* viewerModule(void* id){
 
   // GLFW window creation
   window = glfwCreateWindow(screenWidth, screenHeight, "3D Viewer", NULL, NULL);
+
+  glfwSetWindowCloseCallback(window, window_close_callback);
+  
   if (!window) {
       fprintf(stderr, "Failed to create GLFW window\n");
       glfwTerminate();
@@ -466,4 +491,12 @@ void initViewerModule(){
 void stopViewerModule(){
   viewerIsRunning = 0;
   pthread_join(viewer_thread_id, NULL);
+}
+
+int isViewerModuleRunning(void){
+  return viewerIsRunning;
+}
+
+void requestStopViewerModule(){
+  viewerIsRunning = 0;
 }
