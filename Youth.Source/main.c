@@ -1,12 +1,10 @@
 // main.c
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <signal.h>
 #include <unistd.h>
 #include "SensorModule/sensorModule.h"
 #include "ViewerModule/viewerModule.h"
-#include "main.h"
 
 // 종료 시그널 핸들링
 volatile int keepRunning = 1;

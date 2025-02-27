@@ -324,22 +324,22 @@ void error_callback(int error, const char* description)
 // Keyboard Callback
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
-    }
+  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+    glfwSetWindowShouldClose(window, GLFW_TRUE);
+  }
 }
 
 // Mouse Button Callback
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
-    if (button == GLFW_MOUSE_BUTTON_LEFT) {
-        if (action == GLFW_PRESS) {
-            isDragging = 1;
-            glfwGetCursorPos(window, (double*)&lastMouseX, (double*)&lastMouseY);
-        } else if (action == GLFW_RELEASE) {
-            isDragging = 0;
-        }
+  if (button == GLFW_MOUSE_BUTTON_LEFT) {
+    if (action == GLFW_PRESS) {
+      isDragging = 1;
+      glfwGetCursorPos(window, (double*)&lastMouseX, (double*)&lastMouseY);
+    } else if (action == GLFW_RELEASE) {
+      isDragging = 0;
     }
+  }
 }
 
 // Mouse Moving Callback
@@ -372,79 +372,76 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 // Window Size Change Callback
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-    glViewport(0, 0, width, height);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluPerspective(45.0, (double)width / (double)height, 0.1, 100.0);
-    glMatrixMode(GL_MODELVIEW);
+  glViewport(0, 0, width, height);
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+  gluPerspective(45.0, (double)width / (double)height, 0.1, 100.0);
+  glMatrixMode(GL_MODELVIEW);
 }
 
 // Viewer Thread Function
 void* viewerModule(void* id){
-    printf("Initializing GLFW...\n");
+  printf("Initializing GLFW...\n");
     
-    if (!glfwInit()) {
-        fprintf(stderr, "Failed to initialize GLFW\n");
-        return NULL;
-    }
+  if (!glfwInit()) {
+    fprintf(stderr, "Failed to initialize GLFW\n");
+    return NULL;
+  }
     
-    glfwSetErrorCallback(error_callback);
+  glfwSetErrorCallback(error_callback);
     
-    // Get Monitor Resolution
-    int screenWidth, screenHeight;
+  // Get Monitor Resolution
+  int screenWidth, screenHeight;
 #ifdef _WIN32
-    screenWidth = GetSystemMetrics(SM_CXSCREEN);
-    screenHeight = GetSystemMetrics(SM_CYSCREEN);
+  screenWidth = GetSystemMetrics(SM_CXSCREEN);
+  screenHeight = GetSystemMetrics(SM_CYSCREEN);
 #elif __linux__
-    Display* d = XOpenDisplay(NULL);
-    Screen* s = DefaultScreenOfDisplay(d);
-    screenWidth = s->width;
-    screenHeight = s->height;
-    XCloseDisplay(d);
+  Display* d = XOpenDisplay(NULL);
+  Screen* s = DefaultScreenOfDisplay(d);
+  screenWidth = s->width;
+  screenHeight = s->height;
+  XCloseDisplay(d);
 #endif
 
-    // GLFW window creation
-    window = glfwCreateWindow(screenWidth, screenHeight, "3D Viewer", NULL, NULL);
-    if (!window) {
-        fprintf(stderr, "Failed to create GLFW window\n");
-        glfwTerminate();
-        return NULL;
-    }
+  // GLFW window creation
+  window = glfwCreateWindow(screenWidth, screenHeight, "3D Viewer", NULL, NULL);
+  if (!window) {
+      fprintf(stderr, "Failed to create GLFW window\n");
+      glfwTerminate();
+      return NULL;
+  }
     
-    glfwMakeContextCurrent(window);
-    glfwSetKeyCallback(window, key_callback);
-    glfwSetMouseButtonCallback(window, mouse_button_callback);
-    glfwSetCursorPosCallback(window, cursor_position_callback);
-    glfwSetScrollCallback(window, scroll_callback);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+  glfwMakeContextCurrent(window);
+  glfwSetKeyCallback(window, key_callback);
+  glfwSetMouseButtonCallback(window, mouse_button_callback);
+  glfwSetCursorPosCallback(window, cursor_position_callback);
+  glfwSetScrollCallback(window, scroll_callback);
+  glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     
-    // Initialize GLEW
-    GLenum err = glewInit();
-    if (err != GLEW_OK) {
-        fprintf(stderr, "GLEW initialization error: %s\n", glewGetErrorString(err));
-        glfwTerminate();
-        return NULL;
-    }
+  // Initialize GLEW
+  GLenum err = glewInit();
+  if (err != GLEW_OK) {
+      fprintf(stderr, "GLEW initialization error: %s\n", glewGetErrorString(err));
+      glfwTerminate();
+      return NULL;
+  }
     
-    initOpenGL();
-    
-    // printf("Initializing Astra...\n");
-    // context = InitializeAstraObj();
+  initOpenGL();
 
-    // Set up initial perspective
-    int width, height;
-    glfwGetFramebufferSize(window, &width, &height);
-    framebuffer_size_callback(window, width, height);
+  // Set up initial perspective
+  int width, height;
+  glfwGetFramebufferSize(window, &width, &height);
+  framebuffer_size_callback(window, width, height);
 
-    // Start Data Receiving Thread
-    pthread_t receiveThreadId;
+  // Start Data Receiving Thread
+  pthread_t receiveThreadId;
   pthread_create(&receiveThreadId, NULL, dataReceiveThread, NULL);
 
-    // Main loop
-    while (!glfwWindowShouldClose(window)) {
-        display_3d_color();
-        glfwPollEvents();
-    }
+  // Main loop
+  while (!glfwWindowShouldClose(window)) {
+    display_3d_color();
+    glfwPollEvents();
+  }
 
   // 정리
   viewerIsRunning = 0;
@@ -453,17 +450,17 @@ void* viewerModule(void* id){
   free(depthDataBuffer);
   free(colorDataBuffer);
 
-    glfwDestroyWindow(window);
-    glfwTerminate();
+  glfwDestroyWindow(window);
+  glfwTerminate();
 
   printf("Viewer thread terminated\n");
-    return NULL;
+  return NULL;
 }
 
 pthread_t viewer_thread_id;
 void initViewerModule(){
   viewerIsRunning = 1;
-    pthread_create(&viewer_thread_id, NULL, viewerModule, NULL);
+  pthread_create(&viewer_thread_id, NULL, viewerModule, NULL);
 }
 
 void stopViewerModule(){
