@@ -1,5 +1,6 @@
 #include "sensorModule.h"
 #include "astra_wrapper.h"
+#include "../frameDefinitions.h"
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -8,10 +9,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
-// Message Queue Name
-#define MQ_NAME "/sensor_viewer_queue"
-#define MAX_MSG_SIZE 8192 // 메세지 최대 크기, 필요에 따라 조정 가능
+#include <sys/time.h>
 
 // Sensor Context
 AstraContext_t* sensorContext = NULL;
@@ -19,23 +17,15 @@ AstraContext_t* sensorContext = NULL;
 // Message Queue Handle
 mqd_t mqSend = -1;
 
-#define MSG_TYPE_METADATA 1
-#define MSG_TYPE_DEPTH_DATA 2
-#define MSG_TYPE_COLOR_DATA 3
-
-// Sensor Data Structure
-typedef struct {
-  int msgType; // 메세지 타입
-  int width;  // 이미지 너비
-  int height; // 이미지 높이
-  int chunkIndex; // 청크 인덱스
-  int totalChunks; // 전체 청크 수
-  int dataSize; // 이 메세지의 데이터 크기
-  int frameId; // 프레임 식별자
-}MessageHeader;
-
 // Thread Control Variable;
 static int sensorIsRunning = 1;
+
+// Get Current Time (ms)
+static uint32_t getCurrentTimeMs(){
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  return (uint32_t)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
+}
 
 void* sensorLoop(void* arg){
   printf("Sensor thread started...\n");
@@ -48,7 +38,7 @@ void* sensorLoop(void* arg){
   attr.mq_curmsgs = 0;
 
   // Generate Message Queue
-  mqSend = mq_open(MQ_NAME, O_CREAT | O_WRONLY, 0644, &attr);
+  mqSend = mq_open(MQ_SENSOR_TO_LOGGER, O_CREAT | O_WRONLY, 0644, &attr);
   if(mqSend == (mqd_t) - 1){
     perror("mq_open send");
     return NULL;
@@ -61,7 +51,7 @@ void* sensorLoop(void* arg){
   if(!sensorContext){
     printf("Failed to initialize Astra sensor\n");
     mq_close(mqSend);
-    mq_unlink(MQ_NAME);
+    // mq_unlink(MQ_NAME);
     return NULL;
   }
 
@@ -71,7 +61,7 @@ void* sensorLoop(void* arg){
     perror("malloc message buffer");
     TerminateAstraObj(sensorContext);
     mq_close(mqSend);
-    mq_unlink(MQ_NAME);
+    // mq_unlink(MQ_NAME);
     return NULL;
   }
 
@@ -87,6 +77,7 @@ void* sensorLoop(void* arg){
 
     if(depthData && colorData){
       frameId++;
+      uint32_t timestamp = getCurrentTimeMs();
 
       // 1. 메타데이터 메세지 전송
       MessageHeader* header = (MessageHeader*)msgBuffer;
@@ -97,6 +88,7 @@ void* sensorLoop(void* arg){
       header->totalChunks = 0; // 메타데이터에는 의미 없음
       header->dataSize = 0;
       header->frameId = frameId;
+      header->timestamp = timestamp;
 
       if(mq_send(mqSend, msgBuffer, sizeof(MessageHeader), 0) == -1){
         perror("mq_send metadata");
@@ -113,6 +105,7 @@ void* sensorLoop(void* arg){
         header->chunkIndex = i;
         header->totalChunks = totalDepthChunks;
         header->frameId = frameId;
+        header->timestamp = timestamp;
 
         int offset = i * maxDataPerMsg;
         int chunkSize = (i == totalDepthChunks - 1) ? (depthDataSize - offset) : maxDataPerMsg;
@@ -137,6 +130,7 @@ void* sensorLoop(void* arg){
         header->chunkIndex = i;
         header->totalChunks = totalColorChunks;
         header->frameId = frameId;
+        header->timestamp = timestamp;
 
         int offset = i * maxDataPerMsg;
         int chunkSize = (i == totalColorChunks - 1) ? (colorDataSize - offset) : maxDataPerMsg;
@@ -180,7 +174,7 @@ void initSensorModule(){
 void stopSensorModule(){
   sensorIsRunning = 0;
   pthread_join(sensor_thread_id, NULL);
-  mq_unlink(MQ_NAME); // Eliminate Message Queue
+  // mq_unlink(MQ_NAME); // Eliminate Message Queue
 }
 
 int isSensorModuleRunning(void){

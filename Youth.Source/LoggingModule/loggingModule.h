@@ -29,6 +29,8 @@ int isPlayingBack();
 // Check Logging Module Execution Status 
 int isLoggingModuleRunning();
 
+void sendControlCommand(int command, const char* filename);
+
 #ifdef __cplusplus
 }
 #endif

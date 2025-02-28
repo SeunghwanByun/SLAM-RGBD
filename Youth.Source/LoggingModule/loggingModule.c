@@ -1,5 +1,5 @@
 #include "loggingModule.h"
-#include "frameDefinitions.h"
+#include "../frameDefinitions.h"
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
@@ -42,7 +42,7 @@ static char currentPlaybackFilename[256];
 static uint32_t frameCounter = 0;
 
 // 기타 상태 변수
-static int receivcedDepthFrame = 0;
+static int receivedDepthFrame = 0;
 static int receivedColorFrame = 0;
 
 // 버퍼
@@ -55,7 +55,7 @@ static int colorBufferSize = 0;
 
 // 현재 시간 가져오기 (밀리초)
 static uint32_t getCurrentTimeMS(){
-  struct timaval tv;
+  struct timeval tv;
   gettimeofday(&tv, NULL);
   return (uint32_t)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
 }
@@ -187,7 +187,7 @@ static void* loggerThread(void* arg){
         switch(header->ctrlCommand){
           case CTRL_CMD_START_RECORD:
             // 녹화 시작 명령 처리
-            if(!isRecondingData){
+            if(!isRecordingData){
               pthread_mutex_lock(&recordMutex);
               strncpy(currentRecordFilename, header->filename, sizeof(currentRecordFilename) -1);
               currentRecordFilename[sizeof(currentRecordFilename) - 1] = '\0';
@@ -259,7 +259,7 @@ static void* loggerThread(void* arg){
 
         case MSG_TYPE_DEPTH_DATA:
           // 깊이 데이터 청크 처리
-          if(header->chunkInde == 0){
+          if(header->chunkIndex == 0){
             // 새 프레임 시작
             receivedDepthFrame = 0;
           }
@@ -398,7 +398,7 @@ static int readFrameFromFile(FILE* file, FrameHeader* header, char* depthData, c
 }
 
 // 청크로 나누어 데이터 전송
-static void sendDataInChunks(mqd_t mqdes, int mstType, int frameId, uint32_t timestamp, int width, int height, const char* data, int dataSize){
+static void sendDataInChunks(mqd_t mqdes, int msgType, int frameId, uint32_t timestamp, int width, int height, const char* data, int dataSize){
   char* msgBuffer = (char*)malloc(MAX_MSG_SIZE);
   if(!msgBuffer){
     perror("malloc chunk buffer");
@@ -424,10 +424,10 @@ static void sendDataInChunks(mqd_t mqdes, int mstType, int frameId, uint32_t tim
     header->dataSize = chunkSize;
 
     // 데이터 복사
-    memcpy(msgBuffer + sizeof(MessageHeader), data + offset, chunckSize);
+    memcpy(msgBuffer + sizeof(MessageHeader), data + offset, chunkSize);
 
     // 전송
-    if(mq_send(mqdes, msgBuffer, sizeof(MessageHeader) + chunckSize, 0) == -1){
+    if(mq_send(mqdes, msgBuffer, sizeof(MessageHeader) + chunkSize, 0) == -1){
       perror("mq_send chunk");
       break;
     }
@@ -477,7 +477,7 @@ static void* playbackThread(void* arg){
   // 데이터 버퍼
   char* playbackDepthBuffer = NULL;
   char* playbackColorBuffer = NULL;
-  int maxBufferSize = 1024 *1024; // 1MB 초기 할당
+  int maxBufferSize = 1024 * 1024; // 1MB 초기 할당
   
   playbackDepthBuffer = (char*)malloc(maxBufferSize);
   playbackColorBuffer = (char*)malloc(maxBufferSize);
@@ -548,7 +548,7 @@ static void* playbackThread(void* arg){
   pthread_mutex_lock(&playbackMutex);
   if(playbackFile){
     fclose(playbackFile);
-    plalybackFile = NULL;
+    playbackFile = NULL;
   }
   isPlaybackActive = 0;
   pthread_mutex_unlock(&playbackMutex);
@@ -576,7 +576,7 @@ void initLoggingModule(){
 
   // 로거->뷰어 큐 생성
   mqTemp = mq_open(MQ_LOGGER_TO_VIEWER, O_CREAT, 0644, &attr);
-  if(mqTemp !- (mqd_t) - 1){
+  if(mqTemp != (mqd_t) - 1){
     mq_close(mqTemp);
   }
 
@@ -593,7 +593,7 @@ void initLoggingModule(){
   recordFile = NULL;
   playbackFile = NULL;
   currentRecordFilename[0] = '\0';
-  currentPlaybackFilename[0] = '\';
+  currentPlaybackFilename[0] = '\0';
 
   // 로거 스레드 시작
   pthread_create(&logger_thread_id, NULL, loggerThread, NULL);
@@ -618,6 +618,93 @@ void stopLoggingModule(){
   stopPlayback();
 
   // 스레드 종료 대기
+  printf("Waiting for logger thread to terminate...\n");
   pthread_join(logger_thread_id, NULL);
+
+  printf("Waiting for playback thread to terminate...\n");
   pthread_join(playback_thread_id, NULL);
+
+  printf("Logging module stopped\n");
+}
+
+// 녹화 시작 함수
+int startRecording(const char* filename){
+  if(isRecordingData){
+    printf("Already recording to: %s\n", currentRecordFilename);
+    return 0;
+  }
+
+  // 제어 명령 전송
+  sendControlCommand(CTRL_CMD_START_RECORD, filename);
+  return 1;
+}
+
+// 녹화 중지 함수
+void stopRecording(){
+  if(!isRecordingData){
+    sendControlCommand(CTRL_CMD_STOP_RECORD, NULL);
+  }
+}
+
+// 재생 시작 함수
+int startPlayback(const char* filename){
+  if(isPlaybackActive){
+    printf("Already playing: %s\n", currentPlaybackFilename);
+    return 0;
+  }
+
+  // 제어 명령 전송
+  sendControlCommand(CTRL_CMD_START_PLAYBACK, filename);
+  return 1;
+}
+
+// 재생 중지 함수
+void stopPlayback(){
+  if(isPlaybackActive){
+    sendControlCommand(CTRL_CMD_STOP_PLAYBACK, NULL);
+  }
+}
+
+// 녹화 상태 확인
+int isRecording(){
+  return isRecordingData;
+}
+
+// 재생 상태 확인
+int isPlayingBack(){
+  return isPlaybackActive;
+}
+
+int isLoggingModuleRunning(void){
+  return loggingIsRunning;
+}
+
+// 제어 명령 전송 함수
+void sendControlCommand(int command, const char* filename){
+  // 메세지 큐 열기
+  mqd_t mqCtrl = mq_open(MQ_CONTROL_QUEUE, O_WRONLY, 0644, NULL);
+  if(mqCtrl == (mqd_t) - 1){
+    perror("mq_open control for command");
+    return;
+  }
+
+  // 명령 메세지 생성
+  MessageHeader msg;
+  memset(&msg, 0, sizeof(MessageHeader));
+
+  msg.msgType = MSG_TYPE_CONTROL;
+  msg.ctrlCommand = command;
+
+  if(filename){
+    strncpy(msg.filename, filename, sizeof(msg.filename) - 1);
+    msg.filename[sizeof(msg.filename) - 1] = '\0';
+  }
+
+  // 메세지 전송
+  if(mq_send(mqCtrl, (char*)&msg, sizeof(MessageHeader), 0) == -1){
+    perror("mq_send control command");
+  }
+
+  // 메세지 큐 닫기
+  mq_close(mqCtrl);
 }
