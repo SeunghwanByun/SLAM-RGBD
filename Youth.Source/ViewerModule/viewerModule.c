@@ -394,14 +394,14 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 // Viewer Thread Function
 void* viewerThread(void* id){
   printf("Initializing GLFW...\n");
-    
+
   if (!glfwInit()) {
     fprintf(stderr, "Failed to initialize GLFW\n");
     return NULL;
   }
     
   glfwSetErrorCallback(error_callback);
-
+    
   // Get Monitor Resolution
   int screenWidth, screenHeight;
 #ifdef _WIN32
@@ -417,7 +417,6 @@ void* viewerThread(void* id){
 
   // GLFW window creation
   window = glfwCreateWindow(screenWidth, screenHeight, "3D Viewer", NULL, NULL);
-  
   if (!window) {
       fprintf(stderr, "Failed to create GLFW window\n");
       glfwTerminate();

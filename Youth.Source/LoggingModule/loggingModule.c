@@ -56,6 +56,7 @@ static int colorBufferSize = 0;
 // 현재 시간 가져오기 (밀리초)
 static uint32_t getCurrentTimeMS(){
   struct timeval tv;
+
   gettimeofday(&tv, NULL);
   return (uint32_t)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
 }
@@ -188,6 +189,7 @@ static void* loggerThread(void* arg){
           case CTRL_CMD_START_RECORD:
             // 녹화 시작 명령 처리
             if(!isRecordingData){
+
               pthread_mutex_lock(&recordMutex);
               strncpy(currentRecordFilename, header->filename, sizeof(currentRecordFilename) -1);
               currentRecordFilename[sizeof(currentRecordFilename) - 1] = '\0';
@@ -260,6 +262,7 @@ static void* loggerThread(void* arg){
         case MSG_TYPE_DEPTH_DATA:
           // 깊이 데이터 청크 처리
           if(header->chunkIndex == 0){
+
             // 새 프레임 시작
             receivedDepthFrame = 0;
           }
@@ -399,6 +402,7 @@ static int readFrameFromFile(FILE* file, FrameHeader* header, char* depthData, c
 
 // 청크로 나누어 데이터 전송
 static void sendDataInChunks(mqd_t mqdes, int msgType, int frameId, uint32_t timestamp, int width, int height, const char* data, int dataSize){
+
   char* msgBuffer = (char*)malloc(MAX_MSG_SIZE);
   if(!msgBuffer){
     perror("malloc chunk buffer");
@@ -428,6 +432,7 @@ static void sendDataInChunks(mqd_t mqdes, int msgType, int frameId, uint32_t tim
 
     // 전송
     if(mq_send(mqdes, msgBuffer, sizeof(MessageHeader) + chunkSize, 0) == -1){
+
       perror("mq_send chunk");
       break;
     }
@@ -478,6 +483,7 @@ static void* playbackThread(void* arg){
   char* playbackDepthBuffer = NULL;
   char* playbackColorBuffer = NULL;
   int maxBufferSize = 1024 * 1024; // 1MB 초기 할당
+
   
   playbackDepthBuffer = (char*)malloc(maxBufferSize);
   playbackColorBuffer = (char*)malloc(maxBufferSize);
@@ -549,6 +555,7 @@ static void* playbackThread(void* arg){
   if(playbackFile){
     fclose(playbackFile);
     playbackFile = NULL;
+
   }
   isPlaybackActive = 0;
   pthread_mutex_unlock(&playbackMutex);
@@ -577,6 +584,7 @@ void initLoggingModule(){
   // 로거->뷰어 큐 생성
   mqTemp = mq_open(MQ_LOGGER_TO_VIEWER, O_CREAT, 0644, &attr);
   if(mqTemp != (mqd_t) - 1){
+
     mq_close(mqTemp);
   }
 
@@ -594,6 +602,7 @@ void initLoggingModule(){
   playbackFile = NULL;
   currentRecordFilename[0] = '\0';
   currentPlaybackFilename[0] = '\0';
+
 
   // 로거 스레드 시작
   pthread_create(&logger_thread_id, NULL, loggerThread, NULL);
@@ -707,4 +716,5 @@ void sendControlCommand(int command, const char* filename){
 
   // 메세지 큐 닫기
   mq_close(mqCtrl);
+
 }
