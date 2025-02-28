@@ -10,5 +10,4 @@ void initSensorModule();
 void stopSensorModule();
 
 int isSensorModuleRunning(void);
-
 #endif // SENSOR_MODULE_H
