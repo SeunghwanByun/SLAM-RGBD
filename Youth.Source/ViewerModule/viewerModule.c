@@ -1,4 +1,5 @@
 #include "viewerModule.h"
+#include "../frameDefinitions.h"
 #include <pthread.h>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -18,30 +19,6 @@
 #include <X11/Xlib.h>
 #endif
 
-// Message Queue Name
-#define MQ_NAME "/sensor_viewer_queue"
-#define MAX_MSG_SIZE 8192 // 메세지 최대 크기, 필요에 따라 조정 가능
-
-// 메세지 타입 정의
-#define MSG_TYPE_METADATA 1
-#define MSG_TYPE_DEPTH_DATA 2
-#define MSG_TYPE_COLOR_DATA 3
-
-// viewerModule.c 에 구현 추가
-static ExitCallbackFunc exitCallback = NULL;
-
-// Data Structure for receiving from Message Queue
-typedef struct{
-  int msgType; // 메세지 타입
-  int width;  // 이미지 너비
-  int height; // 이미지 높이
-  int chunkIndex; // 청크 인덱스
-  int totalChunks; // 전체 청크 수
-  int dataSize; // 이 메세제의 데이터 크기
-  int frameId;  // 프레임 식별자
-  // 실제 데이터는 메세지 큐에서 별도로 수신
-} MessageHeader;
-
 // Viewer Status Variables
 GLuint depthTexture;
 GLuint colorTexture;
@@ -59,13 +36,16 @@ mqd_t mqReceive = -1;
 // GLFW Window
 GLFWwindow* window;
 
+// 종료 콜백 함수 포인터
+static ExitCallbackFunc exitCallback = NULL;
+
 // Data Buffer
 int16_t* depthDataBuffer = NULL;
 uint8_t* colorDataBuffer = NULL;
 int currentWidth = 0;
 int currentHeight = 0;
 int hasNewData = 0;
-int currentFrameId = 0;
+// int currentFrameId = 0;
 
 // Thread Control Variable
 int viewerIsRunning = 1;
@@ -76,6 +56,7 @@ typedef struct{
   int frameId;
   int width;
   int height;
+  uint32_t timestamp;
   int receivedDepthChunks;
   int totalDepthChunks;
   int receivedColorChunks;
@@ -97,15 +78,22 @@ void initOpenGL()
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+// 콜백 설정 함수
+void setExitCallback(ExitCallbackFunc callback){
+  exitCallback = callback;
+}
+
 // Frame Receive Status Initialization
-void initFrameReceiveStatus(FrameReceiveStatus* status, int frameId, int width, int height){
+void initFrameReceiveStatus(FrameReceiveStatus* status, int frameId, uint32_t timestamp, int width, int height){
   status->frameId = frameId;
+  status->timestamp = timestamp;
   status->width = width;
   status->height = height;
   status->receivedDepthChunks = 0;
   status->totalDepthChunks = 0;
   status->receivedColorChunks = 0;
   status->totalColorChunks = 0;
+  status->isComplete = 0;
 
   // 이전 버퍼 해제
   if(status->depthDataBuffer){
@@ -134,7 +122,7 @@ void initFrameReceiveStatus(FrameReceiveStatus* status, int frameId, int width, 
 
 // Data Receiving Thread
 void* dataReceiveThread(void* arg){
-  printf("Data receive thread started...\n");
+  printf("Viewer data receive thread started...\n");
 
   // Message Queue Feature Setting
   struct mq_attr attr;
@@ -144,7 +132,7 @@ void* dataReceiveThread(void* arg){
   attr.mq_curmsgs = 0;
 
   // Open Message Queue
-  mqReceive = mq_open(MQ_NAME, O_RDONLY, 0644, &attr);
+  mqReceive = mq_open(MQ_LOGGER_TO_VIEWER, O_RDONLY, 0644, &attr);
   if(mqReceive == (mqd_t) - 1){
     perror("mq_open receive");
     return NULL;
@@ -173,7 +161,7 @@ void* dataReceiveThread(void* arg){
         case MSG_TYPE_METADATA:
           // 새 프레임 정보 수신
           pthread_mutex_lock(&dataMutex);
-          initFrameReceiveStatus(&receiveStatus, header->frameId, header->width, header->height);
+          initFrameReceiveStatus(&receiveStatus, header->frameId, header->timestamp, header->width, header->height);
           pthread_mutex_unlock(&dataMutex);
           break;
 
@@ -244,7 +232,7 @@ void* dataReceiveThread(void* arg){
           memcpy(depthDataBuffer, receiveStatus.depthDataBuffer, currentWidth * currentHeight * sizeof(int16_t));
           memcpy(colorDataBuffer, receiveStatus.colorDataBuffer, currentWidth * currentHeight * 3 * sizeof(uint8_t));
 
-          currentFrameId = receiveStatus.frameId;
+          // currentFrameId = receiveStatus.frameId;
           hasNewData = 1;
         }
 
@@ -259,12 +247,17 @@ void* dataReceiveThread(void* arg){
   // 정리
   free(msgBuffer);
 
+  pthread_mutex_lock(&dataMutex);
   if(receiveStatus.depthDataBuffer){
     free(receiveStatus.depthDataBuffer);
+    receiveStatus.depthDataBuffer = NULL;
   }
+
   if(receiveStatus.colorDataBuffer){
     free(receiveStatus.colorDataBuffer);
+    receiveStatus.colorDataBuffer = NULL;
   }
+  pthread_mutex_unlock(&dataMutex);
 
   mq_close(mqReceive);
 
@@ -315,6 +308,7 @@ void display_3d_color(){
   }
 
   pthread_mutex_unlock(&dataMutex);
+
   glfwSwapBuffers(window);
 }
 
@@ -322,6 +316,16 @@ void display_3d_color(){
 void error_callback(int error, const char* description)
 {
     fprintf(stderr, "Error: %s\n", description);
+}
+
+// 윈도우 종료 콜백
+void window_close_callback(GLFWwindow* window){
+  viewerIsRunning = 0;
+
+  // 외부 프로그램에 종료 신호 보내기
+  if(exitCallback){
+    exitCallback();
+  }
 }
 
 // Keyboard Callback
@@ -335,11 +339,6 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
   if(exitCallback){
     exitCallback(); // 메인 프로그램에 등록된 콜백 호출
   }
-}
-
-
-void setExitCallback(ExitCallbackFunc callback){
-  exitCallback = callback;
 }
 
 // Mouse Button Callback
@@ -392,17 +391,8 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
   glMatrixMode(GL_MODELVIEW);
 }
 
-void window_close_callback(GLFWwindow* window){
-  viewerIsRunning = 0;
-
-  // 외부 프로그램에 종료 신호 보내기
-  if(exitCallback){
-    exitCallback();
-  }
-}
-
 // Viewer Thread Function
-void* viewerModule(void* id){
+void* viewerThread(void* id){
   printf("Initializing GLFW...\n");
 
   if (!glfwInit()) {
@@ -427,9 +417,6 @@ void* viewerModule(void* id){
 
   // GLFW window creation
   window = glfwCreateWindow(screenWidth, screenHeight, "3D Viewer", NULL, NULL);
-
-  glfwSetWindowCloseCallback(window, window_close_callback);
-  
   if (!window) {
       fprintf(stderr, "Failed to create GLFW window\n");
       glfwTerminate();
@@ -437,6 +424,7 @@ void* viewerModule(void* id){
   }
     
   glfwMakeContextCurrent(window);
+  glfwSetWindowCloseCallback(window, window_close_callback);
   glfwSetKeyCallback(window, key_callback);
   glfwSetMouseButtonCallback(window, mouse_button_callback);
   glfwSetCursorPosCallback(window, cursor_position_callback);
@@ -463,7 +451,7 @@ void* viewerModule(void* id){
   pthread_create(&receiveThreadId, NULL, dataReceiveThread, NULL);
 
   // Main loop
-  while (!glfwWindowShouldClose(window)) {
+  while (!glfwWindowShouldClose(window) && viewerIsRunning) {
     display_3d_color();
     glfwPollEvents();
   }
@@ -485,7 +473,7 @@ void* viewerModule(void* id){
 pthread_t viewer_thread_id;
 void initViewerModule(){
   viewerIsRunning = 1;
-  pthread_create(&viewer_thread_id, NULL, viewerModule, NULL);
+  pthread_create(&viewer_thread_id, NULL, viewerThread, NULL);
 }
 
 void stopViewerModule(){
