@@ -4,6 +4,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <time.h>
+#include <errno.h>
 #include <mqueue.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -185,11 +186,30 @@ void setupShutdownTimer(int seconds){
   }
 }
 
-// 모든 메세지 큐 정리
+// 모든 메세지 큐 정리 - 안전한 버전
 void cleanupMessageQueues(){
-  mq_unlink(MQ_SENSOR_TO_LOGGER);
-  mq_unlink(MQ_LOGGER_TO_VIEWER);
-  mq_unlink(MQ_CONTROL_QUEUE);
+  // 각 메시지 큐를 안전하게 제거
+  // 이미 제거된 큐에 대한 unlink는 에러를 반환하지만 무시함
+  if(mq_unlink(MQ_SENSOR_TO_LOGGER) == -1) {
+    if(errno != ENOENT) { // ENOENT는 "존재하지 않음" 에러
+      perror("mq_unlink MQ_SENSOR_TO_LOGGER failed");
+    }
+  }
+  
+  if(mq_unlink(MQ_LOGGER_TO_VIEWER) == -1) {
+    if(errno != ENOENT) {
+      perror("mq_unlink MQ_LOGGER_TO_VIEWER failed");
+    }
+  }
+  
+  if(mq_unlink(MQ_CONTROL_QUEUE) == -1) {
+    if(errno != ENOENT) {
+      perror("mq_unlink MQ_CONTROL_QUEUE failed");
+    }
+  }
+  
+  // 짧은 대기로 메시지 큐가 완전히 제거되도록 함
+  usleep(100000); // 0.1초
 }
 
 // 안전한 종료 시퀀스
@@ -210,10 +230,10 @@ void safeShutdown(){
   printf("Stopping viewer module...\n");
   stopViewerModule();
 
-  printf("Stopping sensor module...\n");
-  stopSensorModule();
-
   printf("Stopping logging module...\n");
+  stopLoggingModule();  // 원래 코드에서는 잘못된 stopSensorModule()을 호출함
+
+  printf("Stopping sensor module...\n");
   stopSensorModule();
 
   // 타이머 취소
@@ -245,11 +265,19 @@ int main(int argc, char** argv)
   initLoggingModule();
 
   // 약간의 지연 후 다른 모듈 초기화
-  usleep(100000); // 0.1초
+  usleep(200000); // 0.1초
 
   /* Connect sensor and get sensor data. */
   printf("Initializing sensor module...\n");
   initSensorModule();
+  
+  // 센서 모듈 초기화 확인
+  usleep(500000); // 0.5초
+  if(!isSensorModuleRunning()) {
+    printf("Sensor module failed to initialize! Exiting...\n");
+    stopLoggingModule();
+    return 1;
+  }
 
   /* Algorithm module. */
   // pthread_t algorithm_thread_id;
@@ -257,12 +285,21 @@ int main(int argc, char** argv)
 
   /* Generate 3D Viewer. */
   // 약간의 지연 후 뷰어 모듈 초기화 (센서가 준비되도록)
-  usleep(100000);
+  usleep(200000);
   printf("Initializing viewer module...\n");
   initViewerModule();
 
   // 종료 콜백 설정
   setExitCallback(exitHandler);
+
+    // 모듈 초기화 확인
+  usleep(500000); // 0.5초
+  if(!isViewerModuleRunning()) {
+    printf("Viewer module failed to initialize! Exiting...\n");
+    stopSensorModule();
+    stopLoggingModule();
+    return 1;
+  }
 
   printf("All modules initialized. Press Enter to show menu.\n");
 

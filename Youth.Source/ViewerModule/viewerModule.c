@@ -66,7 +66,7 @@ typedef struct{
   int isComplete;
 } FrameReceiveStatus;
 
-FrameReceiveStatus receiveStatus;
+FrameReceiveStatus receiveStatus = {0}; // 정적 초기화 추가
 
 // Initialize OpenGL
 void initOpenGL()
@@ -83,8 +83,42 @@ void setExitCallback(ExitCallbackFunc callback){
   exitCallback = callback;
 }
 
+// 안전한 메모리 할당 헬퍼 함수
+static void* safe_malloc(size){
+  void* ptr = malloc(size);
+  if(!ptr){
+    perror("malloc failed");
+    return NULL;
+  }
+  memset(ptr, 0, size); // 안전하게 0으로 초기화
+  return ptr;
+}
+
 // Frame Receive Status Initialization
 void initFrameReceiveStatus(FrameReceiveStatus* status, int frameId, uint32_t timestamp, int width, int height){
+  // 기존 버퍼를 해제하기 전에 새 버퍼 할당
+  int depthDataSize = width * height * sizeof(int16_t);
+  int colorDataSize = width * height * 3 * sizeof(uint8_t);
+
+  char* newDepthBuffer = safe_malloc(depthDataSize);
+  char* newColorBuffer = safe_malloc(colorDataSize);
+
+  if(!newDepthBuffer || !newColorBuffer){
+    if(newDepthBuffer) free(newDepthBuffer);
+    if(newColorBuffer) free(newColorBuffer);
+
+    // 실패 시 기준 버퍼 유지
+    return;
+  }
+
+  // 이전 버퍼 해제
+  if(status->depthDataBuffer){
+    free(status->depthDataBuffer);
+  }
+  if(status->colorDataBuffer){
+    free(status->colorDataBuffer);
+  }
+
   status->frameId = frameId;
   status->timestamp = timestamp;
   status->width = width;
@@ -94,30 +128,32 @@ void initFrameReceiveStatus(FrameReceiveStatus* status, int frameId, uint32_t ti
   status->receivedColorChunks = 0;
   status->totalColorChunks = 0;
   status->isComplete = 0;
+  status->depthDataBuffer = newDepthBuffer;
+  status->colorDataBuffer = newColorBuffer;
 
-  // 이전 버퍼 해제
-  if(status->depthDataBuffer){
-    free(status->depthDataBuffer);
-  }
-
-  if(status->colorDataBuffer){
-    free(status->colorDataBuffer);
-  }
-
-  // Allocate new buffer
-  int depthDataSize = width * height * sizeof(int16_t);
-  int colorDataSize = width * height * 3 * sizeof(uint8_t);
-
-  status->depthDataBuffer = (char*)malloc(depthDataSize);
-  status->colorDataBuffer = (char*)malloc(colorDataSize);
-
-  if(!status->depthDataBuffer || !status->colorDataBuffer){
-    perror("malloc frame buffers");
-    if(status->depthDataBuffer) free(status->depthDataBuffer);
-    if(status->colorDataBuffer) free(status->colorDataBuffer);
-    status->depthDataBuffer = NULL;
-    status->colorDataBuffer = NULL;
-  }
+  // // 이전 버퍼 해제
+  // if(status->depthDataBuffer){
+  //   free(status->depthDataBuffer);
+  // }
+  //
+  // if(status->colorDataBuffer){
+  //   free(status->colorDataBuffer);
+  // }
+  //
+  // // Allocate new buffer
+  // int depthDataSize = width * height * sizeof(int16_t);
+  // int colorDataSize = width * height * 3 * sizeof(uint8_t);
+  //
+  // status->depthDataBuffer = (char*)malloc(depthDataSize);
+  // status->colorDataBuffer = (char*)malloc(colorDataSize);
+  //
+  // if(!status->depthDataBuffer || !status->colorDataBuffer){
+  //   perror("malloc frame buffers");
+  //   if(status->depthDataBuffer) free(status->depthDataBuffer);
+  //   if(status->colorDataBuffer) free(status->colorDataBuffer);
+  //   status->depthDataBuffer = NULL;
+  //   status->colorDataBuffer = NULL;
+  // }
 }
 
 // Data Receiving Thread
@@ -139,15 +175,16 @@ void* dataReceiveThread(void* arg){
   }
 
   // Message Buffer
-  char* msgBuffer = (char*)malloc(MAX_MSG_SIZE);
+  char* msgBuffer = safe_malloc(MAX_MSG_SIZE);
   if(!msgBuffer){
-    perror("malloc");
     mq_close(mqReceive);
     return NULL;
   }
 
-  // Initialize Receive status
+  // Initialize Receive status - 구조체 필드 명시적 초기화
   memset(&receiveStatus, 0, sizeof(FrameReceiveStatus));
+  receiveStatus.depthDataBuffer = NULL;
+  receiveStatus.colorDataBuffer = NULL;
 
   // Main Loop
   while(viewerIsRunning){
@@ -173,10 +210,15 @@ void* dataReceiveThread(void* arg){
             int maxDataPerMsg = MAX_MSG_SIZE - sizeof(MessageHeader);
             int offset = header->chunkIndex * maxDataPerMsg;
 
-            memcpy(receiveStatus.depthDataBuffer + offset, msgBuffer + sizeof(MessageHeader), header->dataSize);
+            // 범위 체크 추가
+            if(offset + header->dataSize <= receiveStatus.width * receiveStatus.height * sizeof(int16_t)){
+              memcpy(receiveStatus.depthDataBuffer + offset, msgBuffer + sizeof(MessageHeader), header->dataSize);
 
-            receiveStatus.receivedDepthChunks++;
-            receiveStatus.totalDepthChunks = header->totalChunks;
+              receiveStatus.receivedDepthChunks++;
+              receiveStatus.totalDepthChunks = header->totalChunks;
+            }else{
+              printf("Warning: Depth data chunk exceeds buffer size, ignoring\n");
+            }
           }
 
           pthread_mutex_unlock(&dataMutex);
@@ -190,10 +232,15 @@ void* dataReceiveThread(void* arg){
             int maxDataPerMsg = MAX_MSG_SIZE - sizeof(MessageHeader);
             int offset = header->chunkIndex * maxDataPerMsg;
 
-            memcpy(receiveStatus.colorDataBuffer + offset, msgBuffer + sizeof(MessageHeader), header->dataSize);
+            // 범위 체크 추가
+            if(offset + header->dataSize <= receiveStatus.width * receiveStatus.height * 3 * sizeof(uint8_t)){
+              memcpy(receiveStatus.colorDataBuffer + offset, msgBuffer + sizeof(MessageHeader), header->dataSize);
 
-            receiveStatus.receivedColorChunks++;
-            receiveStatus.totalColorChunks = header->totalChunks;
+              receiveStatus.receivedColorChunks++;
+              receiveStatus.totalColorChunks = header->totalChunks;
+            }else{
+              printf("Warning: Color data chunk exceeds buffer size, lgnoring\n");
+            }
           }
 
           pthread_mutex_unlock(&dataMutex);
@@ -207,22 +254,22 @@ void* dataReceiveThread(void* arg){
         // 프레임이 완성됨 - 메인 버퍼로 복사
         if(currentWidth != receiveStatus.width || currentHeight != receiveStatus.height){
           // 버퍼 크기 변경 필요
-          free(depthDataBuffer);
-          free(colorDataBuffer);
-
-          depthDataBuffer = (int16_t*)malloc(receiveStatus.width * receiveStatus.height * sizeof(int16_t));
-          colorDataBuffer = (uint8_t*)malloc(receiveStatus.width * receiveStatus.height * 3 * sizeof(uint8_t));
+          uint16_t* newDepthBuffer = (int16_t*)safe_malloc(receiveStatus.width * receiveStatus.height * sizeof(int16_t));
+          uint8_t* newColorBuffer = (uint8_t*)safe_malloc(receiveStatus.width * receiveStatus.height * 3 * sizeof(uint8_t));
 
           if(!depthDataBuffer || !colorDataBuffer){
-            perror("malloc display buffers");
-            free(depthDataBuffer);
-            free(colorDataBuffer);
-            depthDataBuffer = NULL;
-            colorDataBuffer = NULL;
+            if(newDepthBuffer) free(newDepthBuffer);
+            if(newColorBuffer) free(newColorBuffer);
             pthread_mutex_unlock(&dataMutex);
             continue;
           }
 
+          // 이전 버퍼 해제
+          if(depthDataBuffer) free(depthDataBuffer);
+          if(colorDataBuffer) free(colorDataBuffer);
+
+          depthDataBuffer = newDepthBuffer;
+          colorDataBuffer = newColorBuffer;
           currentWidth = receiveStatus.width;
           currentHeight = receiveStatus.height;
         }
@@ -241,6 +288,10 @@ void* dataReceiveThread(void* arg){
       }
 
       pthread_mutex_unlock(&dataMutex);
+    }else{
+      // 에러 발생 시 짧은 대기 후 재시도
+      usleep(10000); // 10ms 
+      continue;
     }
   }
 
@@ -278,7 +329,7 @@ void display_3d_color(){
 
   pthread_mutex_lock(&dataMutex);
 
-  if(hasNewData && depthDataBuffer && colorDataBuffer){
+  if(hasNewData && depthDataBuffer && colorDataBuffer && currentWidth > 0 && currentHeight > 0){
     glBegin(GL_POINTS);
 
     for(int y = 0; y < currentHeight; ++y){
@@ -309,17 +360,20 @@ void display_3d_color(){
 
   pthread_mutex_unlock(&dataMutex);
 
-  glfwSwapBuffers(window);
+  if(window){
+    glfwSwapBuffers(window);
+  }
 }
 
 // GLFW Error Callback
 void error_callback(int error, const char* description)
 {
-    fprintf(stderr, "Error: %s\n", description);
+    fprintf(stderr, "GLFW Error %d: %s\n", error, description);
 }
 
 // 윈도우 종료 콜백
 void window_close_callback(GLFWwindow* window){
+  printf("Window close callback triggered\n");
   viewerIsRunning = 0;
 
   // 외부 프로그램에 종료 신호 보내기
@@ -332,13 +386,16 @@ void window_close_callback(GLFWwindow* window){
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+    printf("ESC key pressed, setting window should close\n");
     glfwSetWindowShouldClose(window, GLFW_TRUE);
   }
 
-  // 외부 프로그램에 종료 신호 보내기 (전역변수나 신호 사용)
-  if(exitCallback){
-    exitCallback(); // 메인 프로그램에 등록된 콜백 호출
-  }
+  /* 외부 프로그램에 종료 신호 보내기는 window_close_callback 에서 처리됨
+   * 여기에서는 중복 호출하지 않음. */
+  // // 외부 프로그램에 종료 신호 보내기 (전역변수나 신호 사용)
+  // if(exitCallback){
+  //   exitCallback(); // 메인 프로그램에 등록된 콜백 호출
+  // }
 }
 
 // Mouse Button Callback
@@ -384,6 +441,8 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 // Window Size Change Callback
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
+  if(width <= 0 || height <= 0) return;
+
   glViewport(0, 0, width, height);
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
@@ -397,13 +456,16 @@ void* viewerThread(void* id){
 
   if (!glfwInit()) {
     fprintf(stderr, "Failed to initialize GLFW\n");
+    viewerIsRunning = 0; // 초기화 실패 시 바로 실행 중지 플래그 설정
     return NULL;
   }
     
   glfwSetErrorCallback(error_callback);
     
   // Get Monitor Resolution
-  int screenWidth, screenHeight;
+  int screenWidth = 800; // Set default value.
+  int screenHeight = 600;
+
 #ifdef _WIN32
   screenWidth = GetSystemMetrics(SM_CXSCREEN);
   screenHeight = GetSystemMetrics(SM_CYSCREEN);
@@ -415,11 +477,24 @@ void* viewerThread(void* id){
   XCloseDisplay(d);
 #endif
 
-  // GLFW window creation
+  // 너무 큰 창 크기 방지
+  screenWidth = screenWidth > 1920 ? 1920 : screenWidth;
+  screenHeight = screenHeight > 1080 ? 1080 : screenHeight;
+
+  // 창 크기를 화면 크기의 80%로 설정
+  screenWidth = (int)(screenWidth * 0.8);
+  screenHeight = (int)(screenHeight * 0.8);
+
+  //  GLFW window creation
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+  glfwWindowHint(GLFW_SAMPLES, 4);
+
   window = glfwCreateWindow(screenWidth, screenHeight, "3D Viewer", NULL, NULL);
   if (!window) {
       fprintf(stderr, "Failed to create GLFW window\n");
       glfwTerminate();
+      viewerIsRunning = 0;
       return NULL;
   }
     
@@ -435,11 +510,18 @@ void* viewerThread(void* id){
   GLenum err = glewInit();
   if (err != GLEW_OK) {
       fprintf(stderr, "GLEW initialization error: %s\n", glewGetErrorString(err));
+      glfwDestroyWindow(window);
       glfwTerminate();
+      viewerIsRunning = 0;
       return NULL;
   }
     
   initOpenGL();
+
+  // OpenGL 상태 설정
+  glEnable(GL_DEPTH_TEST);
+  glEnable(GL_POINT_SMOOTH);
+  glPointSize(2.0f);
 
   // Set up initial perspective
   int width, height;
@@ -448,22 +530,44 @@ void* viewerThread(void* id){
 
   // Start Data Receiving Thread
   pthread_t receiveThreadId;
-  pthread_create(&receiveThreadId, NULL, dataReceiveThread, NULL);
+  if(pthread_create(&receiveThreadId, NULL, dataReceiveThread, NULL) != 0){
+    fprintf(stderr, "Failed to create data receive thread\n");
+    glfwDestroyWindow(window);
+    glfwTerminate();
+    viewerIsRunning = 0;
+    return NULL;
+  }
 
   // Main loop
-  while (!glfwWindowShouldClose(window) && viewerIsRunning) {
+  while (viewerIsRunning && window && !glfwWindowShouldClose(window)) {
     display_3d_color();
     glfwPollEvents();
+
+    // 약간의 CPU 시간 양보
+    usleep(10000); // 10ms
   }
+
+  printf("Exited viewer main loop, viewerIsRunning=%d, window=%p\n", viewerIsRunning, window);
 
   // 정리
   viewerIsRunning = 0;
   pthread_join(receiveThreadId, NULL);
+  
+  pthread_mutex_lock(&dataMutex);
+  if(depthDataBuffer){
+    free(depthDataBuffer);
+    depthDataBuffer = NULL;
+  }
+  if(colorDataBuffer){
+    free(colorDataBuffer);
+    colorDataBuffer = NULL;
+  }
 
-  free(depthDataBuffer);
-  free(colorDataBuffer);
-
-  glfwDestroyWindow(window);
+  if(window){
+    glfwDestroyWindow(window);
+    window = NULL;
+  }
+  
   glfwTerminate();
 
   printf("Viewer thread terminated\n");
@@ -477,8 +581,19 @@ void initViewerModule(){
 }
 
 void stopViewerModule(){
+  printf("Stopping viewer module...\n");
   viewerIsRunning = 0;
+
+  // 윈도우가 열려있다면 닫기 요청
+  if(window){
+    glfwSetWindowShouldClose(window, GLFW_TRUE);
+
+    // 약간의 시간을 주어 창이 닫히도록 함
+    usleep(100000); // 100ms
+  }
+
   pthread_join(viewer_thread_id, NULL);
+  printf("Viewer module stopped\n");
 }
 
 int isViewerModuleRunning(void){
