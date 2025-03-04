@@ -576,6 +576,7 @@ void* viewerThread(void* id){
 
 pthread_t viewer_thread_id;
 void initViewerModule(){
+  printf("Initializing viewer module...\n");
   viewerIsRunning = 1;
   pthread_create(&viewer_thread_id, NULL, viewerThread, NULL);
 }

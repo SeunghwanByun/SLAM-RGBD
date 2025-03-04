@@ -60,7 +60,7 @@ void displayMenu(){
   printf("1. Start Recording\n");
   printf("2. Stop Recording\n");
   printf("3. Start Playback\n");
-  printf("4. STop Playback\n");
+  printf("4. Stop Playback\n");
   printf("5. Toggle Menu Mode\n");
   printf("0. Exit\n");
   printf("Enter your choice: ");
@@ -227,13 +227,10 @@ void safeShutdown(){
   usleep(500000); // 0.5초
 
   // 모듈 종료 요청 (역순)
-  printf("Stopping viewer module...\n");
   stopViewerModule();
 
-  printf("Stopping logging module...\n");
   stopLoggingModule();  // 원래 코드에서는 잘못된 stopSensorModule()을 호출함
 
-  printf("Stopping sensor module...\n");
   stopSensorModule();
 
   // 타이머 취소
@@ -261,14 +258,12 @@ int main(int argc, char** argv)
 
   /* Logging system will be here. */
   // 로깅 모듈 초기화 (먼저 초기화하여 메세지 큐 생성)
-  printf("Initializing logging module...\n");
   initLoggingModule();
 
   // 약간의 지연 후 다른 모듈 초기화
   usleep(200000); // 0.1초
 
   /* Connect sensor and get sensor data. */
-  printf("Initializing sensor module...\n");
   initSensorModule();
   
   // 센서 모듈 초기화 확인
@@ -286,7 +281,7 @@ int main(int argc, char** argv)
   /* Generate 3D Viewer. */
   // 약간의 지연 후 뷰어 모듈 초기화 (센서가 준비되도록)
   usleep(200000);
-  printf("Initializing viewer module...\n");
+
   initViewerModule();
 
   // 종료 콜백 설정
