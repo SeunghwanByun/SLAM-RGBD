@@ -266,6 +266,7 @@ void* sensorLoop(void* arg){
 pthread_t sensor_thread_id;
 
 void initSensorModule(){
+  printf("Initializing sensor module...\n");
   sensorIsRunning = 1;
   if(pthread_create(&sensor_thread_id, NULL, sensorLoop, NULL) != 0){
     perror("Failed to create sensor thread");
