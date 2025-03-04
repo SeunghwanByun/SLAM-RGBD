@@ -281,6 +281,7 @@ int main(int argc, char** argv)
   /* Generate 3D Viewer. */
   // 약간의 지연 후 뷰어 모듈 초기화 (센서가 준비되도록)
   usleep(200000);
+
   initViewerModule();
 
   // 종료 콜백 설정
