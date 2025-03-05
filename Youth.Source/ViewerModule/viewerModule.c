@@ -252,12 +252,13 @@ void* dataReceiveThread(void* arg){
 
       if(receiveStatus.totalDepthChunks > 0 && receiveStatus.totalColorChunks > 0 && receiveStatus.receivedDepthChunks == receiveStatus.totalDepthChunks && receiveStatus.receivedColorChunks == receiveStatus.totalColorChunks){
         // 프레임이 완성됨 - 메인 버퍼로 복사
+
         if(currentWidth != receiveStatus.width || currentHeight != receiveStatus.height){
           // 버퍼 크기 변경 필요
           uint16_t* newDepthBuffer = (int16_t*)safe_malloc(receiveStatus.width * receiveStatus.height * sizeof(int16_t));
           uint8_t* newColorBuffer = (uint8_t*)safe_malloc(receiveStatus.width * receiveStatus.height * 3 * sizeof(uint8_t));
 
-          if(!depthDataBuffer || !colorDataBuffer){
+          if(!newDepthBuffer || !newColorBuffer){
             if(newDepthBuffer) free(newDepthBuffer);
             if(newColorBuffer) free(newColorBuffer);
             pthread_mutex_unlock(&dataMutex);
@@ -328,7 +329,7 @@ void display_3d_color(){
   glScalef(zoom, zoom, zoom);
 
   pthread_mutex_lock(&dataMutex);
-
+  
   if(hasNewData && depthDataBuffer && colorDataBuffer && currentWidth > 0 && currentHeight > 0){
     glBegin(GL_POINTS);
 
@@ -477,18 +478,18 @@ void* viewerThread(void* id){
   XCloseDisplay(d);
 #endif
 
-  // 너무 큰 창 크기 방지
-  screenWidth = screenWidth > 1920 ? 1920 : screenWidth;
-  screenHeight = screenHeight > 1080 ? 1080 : screenHeight;
+  // // 너무 큰 창 크기 방지
+  // screenWidth = screenWidth > 1920 ? 1920 : screenWidth;
+  // screenHeight = screenHeight > 1080 ? 1080 : screenHeight;
+  //
+  // // 창 크기를 화면 크기의 80%로 설정
+  // screenWidth = (int)(screenWidth * 0.8);
+  // screenHeight = (int)(screenHeight * 0.8);
 
-  // 창 크기를 화면 크기의 80%로 설정
-  screenWidth = (int)(screenWidth * 0.8);
-  screenHeight = (int)(screenHeight * 0.8);
-
-  //  GLFW window creation
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
-  glfwWindowHint(GLFW_SAMPLES, 4);
+  // //  GLFW window creation
+  // glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+  // glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+  // glfwWindowHint(GLFW_SAMPLES, 4);
 
   window = glfwCreateWindow(screenWidth, screenHeight, "3D Viewer", NULL, NULL);
   if (!window) {

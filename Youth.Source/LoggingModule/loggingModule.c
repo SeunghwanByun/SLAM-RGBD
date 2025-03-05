@@ -145,15 +145,15 @@ static void* loggerThread(void* arg){
   }
 
   // 뷰어로 데이터를 보내는 메세지 큐 열기
-  mqToViewer = mq_open(MQ_LOGGER_TO_VIEWER, O_CREAT | O_WRONLY, 0644, &attr);
-  if(mqToViewer ==     (mqd_t)-1){
+  mqToViewer = mq_open(MQ_LOGGER_TO_VIEWER, O_WRONLY, 0644, &attr);
+  if(mqToViewer == (mqd_t)-1){
     perror("mq_open to viewer");
     mq_close(mqFromSensor);
     return NULL;
   }
 
   // 제어 메세지 큐 열기
-  mqControl = mq_open(MQ_CONTROL_QUEUE, O_CREAT | O_RDONLY | O_NONBLOCK, 0644, &attr);
+  mqControl = mq_open(MQ_CONTROL_QUEUE, O_RDONLY | O_NONBLOCK, 0644, &attr);
   if(mqControl == (mqd_t) - 1){
     perror("mq_open control");
     mq_close(mqFromSensor);
@@ -271,6 +271,8 @@ static void* loggerThread(void* arg){
             // 데이터 복사
             int offset = header->chunkIndex * (MAX_MSG_SIZE - sizeof(MessageHeader));
             int copySize = header->dataSize;
+
+            // printf("width : %d, height : %d\n", header->width, header->height);
 
             if(offset + copySize <= depthBufferSize){
               memcpy(depthBuffer + offset, msgBuffer + sizeof(MessageHeader), copySize);
@@ -602,7 +604,6 @@ void initLoggingModule(){
   playbackFile = NULL;
   currentRecordFilename[0] = '\0';
   currentPlaybackFilename[0] = '\0';
-
 
   // 로거 스레드 시작
   pthread_create(&logger_thread_id, NULL, loggerThread, NULL);
