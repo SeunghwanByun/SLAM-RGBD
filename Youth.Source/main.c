@@ -188,6 +188,8 @@ void setupShutdownTimer(int seconds){
 
 // 모든 메세지 큐 정리 - 안전한 버전
 void cleanupMessageQueues(){
+  printf("Clean up all Message Queues\n");
+  
   // 각 메시지 큐를 안전하게 제거
   // 이미 제거된 큐에 대한 unlink는 에러를 반환하지만 무시함
   if(mq_unlink(MQ_SENSOR_TO_LOGGER) == -1) {

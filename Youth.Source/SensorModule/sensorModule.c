@@ -76,8 +76,8 @@ void* sensorLoop(void* arg){
   attr.mq_msgsize = MAX_MSG_SIZE;
   attr.mq_curmsgs = 0;
 
-  // Generate Message Queue
-  mqSend = mq_open(MQ_SENSOR_TO_LOGGER, O_CREAT | O_WRONLY, 0644, &attr);
+  // Message Queue
+  mqSend = mq_open(MQ_SENSOR_TO_LOGGER, O_WRONLY, 0644, &attr);
   if(mqSend == (mqd_t) - 1){
     perror("mq_open send");
     sensorIsRunning = 0;
