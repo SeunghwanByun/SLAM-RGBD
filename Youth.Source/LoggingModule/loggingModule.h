@@ -17,11 +17,14 @@ int startRecording(const char* filename);
 // Stop Recording
 void stopRecording();
 
-// Start Logging file
+// Start Playback of recording file
 int startPlayback(const char* filename);
 
-// Stop Logging file
-void stopRecording();
+// Stop Playback
+void stopPlayback();
+
+// Check Recording Status 
+int isRecording();
 
 // Check Play Status
 int isPlayingBack();

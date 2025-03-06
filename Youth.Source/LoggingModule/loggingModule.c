@@ -16,6 +16,7 @@
 static int loggingIsRunning = 1;
 static int isRecordingData = 0;
 static int isPlaybackActive = 0;
+static int isPassThroughEnabled = 1; // 기본적으로 패스스루 활성화
 
 // 스레드 ID 
 static pthread_t logger_thread_id;
@@ -227,9 +228,36 @@ static void* loggerThread(void* arg){
             break;
 
           case CTRL_CMD_START_PLAYBACK:
+            // 플레이백 시작 명령 처리
+            pthread_mutex_lock(&playbackMutex);
+            strncpy(currentPlaybackFilename, header->filename, sizeof(currentPlaybackFilename) - 1);
+            currentPlaybackFilename[sizeof(currentPlaybackFilename) - 1] = '\0';
+
+            // 패스스루 비활성화
+            isPassThroughEnabled = 0;
+
+            // 플레이백 활성화
+            isPlaybackActive = 1;
+
+            printf("Starting playback from: %s\n", currentPlaybackFilename);
+            pthread_mutex_unlock(&playbackMutex);
+            break;
+
           case CTRL_CMD_STOP_PLAYBACK:
-            // 이 명령들은 플레이백 스레드에서 처리됨
-            // 로거 스레드에서는 무시
+            // 플레이백 중지 명령 처리
+            pthread_mutex_lock(&playbackMutex);
+
+            isPlaybackActive = 0;
+            if(playbackFile){
+              fclose(playbackFile);
+              playbackFile = NULL;
+            }
+
+            // 패스스루 다시 활성화
+            isPassThroughEnabled = 1;
+
+            printf("Playback stopped\n");
+            pthread_mutex_unlock(&playbackMutex);
             break;
         }
       }
@@ -242,8 +270,10 @@ static void* loggerThread(void* arg){
       MessageHeader* header = (MessageHeader*)msgBuffer;
 
       // 뷰어로 데이터 직접 전달 (패스스루)
-      if(mq_send(mqToViewer, msgBuffer, bytesRead, 0) == -1){
-        perror("mq_send to viewer");
+      if(isPassThroughEnabled){
+        if(mq_send(mqToViewer, msgBuffer, bytesRead, 0) == -1){
+          perror("mq_send to viewer");
+        }
       }
 
       // 메세지 타입에 따라 처리
@@ -577,6 +607,10 @@ void initLoggingModule(){
   attr.mq_msgsize = MAX_MSG_SIZE;
   attr.mq_curmsgs = 0;
 
+  /*
+   * Generate Message Queues.
+   */
+  
   // 센서->로거 큐 생성
   mqd_t mqTemp = mq_open(MQ_SENSOR_TO_LOGGER, O_CREAT, 0644, &attr);
   if(mqTemp != (mqd_t) - 1){
@@ -717,5 +751,4 @@ void sendControlCommand(int command, const char* filename){
 
   // 메세지 큐 닫기
   mq_close(mqCtrl);
-
 }

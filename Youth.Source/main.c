@@ -148,9 +148,9 @@ void processUserInput(){
         break;
     }
 
-    if(isMenuMode && keepRunning){
-      displayMenu();
-    }
+    // if(isMenuMode && keepRunning){
+    //   displayMenu();
+    // }
   }else{
     // 메뉴 모드가 아닌 경우, 엔터 키 입력하면 메뉴 활성화
     isMenuMode = 1;
@@ -289,7 +289,7 @@ int main(int argc, char** argv)
   // 종료 콜백 설정
   setExitCallback(exitHandler);
 
-    // 모듈 초기화 확인
+  // 모듈 초기화 확인
   usleep(500000); // 0.5초
   if(!isViewerModuleRunning()) {
     printf("Viewer module failed to initialize! Exiting...\n");
@@ -339,45 +339,13 @@ int main(int argc, char** argv)
       printf("Viewer module stopped unexpectedly!\n");
       keepRunning = 0;
     }
-
-    // // 정기적으로 센서와 뷰어가 살아있는지 확인
-    // if(!isSensorModuleRunning() || !isViewerModuleRunning()){
-    //   keepRunning = 0;
-    //   printf("Module terminated unexpectedly. Shutting down...\n");
-    // }
   }
 
   printf("Shutting down application...\n");
   
   safeShutdown();
-
-  // // 모듈 종료 타임아웃 설정
-  // struct timespec timeout;
-  // clock_gettime(CLOCK_REALTIME, &timeout);
-  // timeout.tv_sec += 3; // 3초 타임 아웃
-  //
-  // // 모듈 정지 요청
-  // requestStopViewerModule();
-  // requestStopSensorModule();
-  
-  // // 스레드 종료 대기 (타임아웃 적용)
-  // if(pthread_timedjoin_np(viewer_thread_id, NULL, &timeout) != 0){
-  //   printf("Viewer module did not terminate gracefully, forsing shutdown...\n");
-  //   // 강제 종료 로직 (예: pthread_cancel);
-  // }
-  //
-  // if(pthread_timedjoin_np(sensor_thread_id, NULL, &timeout) != 0){
-  //   printf("Sensor module did not terminate gracefully, forcing shutdown...\n");
-  //   // 강제 종료 로직
-  // }
-
-  // 모듈 종료
-  // stopSensorModule();
-  // stopViewerModule();
   
   printf("Application terminated successfully\n");
-  // pthread_join(logging_thread_id, NULL);
-  // pthread_join(algorithm_thread_id, NULL);
     
   return 0;
 }
