@@ -1,6 +1,6 @@
 #ifndef SLAM_H
 #define SLAM_H
 
-void Slam();
+void SLAM();
 
 #endif // SLAM_H

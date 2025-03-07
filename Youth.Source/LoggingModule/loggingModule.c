@@ -17,6 +17,8 @@ static int loggingIsRunning = 1;
 static int isRecordingData = 0;
 static int isPlaybackActive = 0;
 static int isPassThroughEnabled = 1; // 기본적으로 패스스루 활성화
+uint32_t playbackFrameCounter = 0;
+
 
 // 스레드 ID 
 static pthread_t logger_thread_id;
@@ -238,6 +240,9 @@ static void* loggerThread(void* arg){
 
             // 플레이백 활성화
             isPlaybackActive = 1;
+
+            // 프레임 카운터 초기화
+            playbackFrameCounter = 0;
 
             printf("Starting playback from: %s\n", currentPlaybackFilename);
             pthread_mutex_unlock(&playbackMutex);
@@ -557,10 +562,14 @@ static void* playbackThread(void* arg){
       fclose(playbackFile);
       playbackFile = NULL;
       isPlaybackActive = 0;
-      printf("Playback completed or error occurred\n");
+      printf("Playback completed or error occurred. Total frames played: %u\n", playbackFrameCounter);
       pthread_mutex_unlock(&playbackMutex);
       continue;
     }
+
+    // 프레임 카운터 증가 및 출력
+    playbackFrameCounter++;
+    printf("Playing frame #%u (ID: %u, timestamp: %u)\n", playbackFrameCounter, header.frameId, header.timestamp);
 
     pthread_mutex_unlock(&playbackMutex);
 
