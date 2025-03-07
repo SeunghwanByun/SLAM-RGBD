@@ -351,7 +351,7 @@ void display_3d_color(){
           float b = colorDataBuffer[colorIndex + 2] / 255.0f;
 
           glColor3f(r, g, b);
-          glVertex3f(x_pos, -y_pos, -z_pos);
+          glVertex3f(-x_pos, -y_pos, -z_pos);
         }
       }
     }
