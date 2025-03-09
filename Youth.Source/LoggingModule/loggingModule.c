@@ -184,10 +184,14 @@ static void* loggerThread(void* arg){
   while(loggingIsRunning){
     // 제어 메세지 확인(non-blocking)
     ssize_t ctrlBytes = mq_receive(mqControl, msgBuffer, MAX_MSG_SIZE, NULL);
+    // printf("ctrlBytes : %d\n", ctrlBytes);
     if(ctrlBytes > 0){
+      // printf("testsets\n");
       MessageHeader* header = (MessageHeader*)msgBuffer;
 
       if(header->msgType == MSG_TYPE_CONTROL){
+        printf("Ctrl Command Receive: %d\n", header->ctrlCommand);
+
         switch(header->ctrlCommand){
           case CTRL_CMD_START_RECORD:
             // 녹화 시작 명령 처리
@@ -230,6 +234,8 @@ static void* loggerThread(void* arg){
             break;
 
           case CTRL_CMD_START_PLAYBACK:
+            printf("Receive Command\n");
+
             // 플레이백 시작 명령 처리
             pthread_mutex_lock(&playbackMutex);
             strncpy(currentPlaybackFilename, header->filename, sizeof(currentPlaybackFilename) - 1);
@@ -536,6 +542,7 @@ static void* playbackThread(void* arg){
   while(loggingIsRunning){
     // 플레이백 모드가 아니면 대기
     if(!isPlaybackActive){
+      // printf("Playback is Not Activated!\n");
       usleep(100000); // 100ms 대기
       continue;
     }

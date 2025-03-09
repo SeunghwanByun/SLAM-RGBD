@@ -1,7 +1,7 @@
 #ifndef ALGORITHM_MODULE_H
 #define ALGORITHM_MODULE_H
 
-#include "Slam.h"
+#include "SLAM.h"
 
 void* algorithmModule(void* id);
 
