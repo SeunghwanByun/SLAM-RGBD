@@ -16,7 +16,7 @@
             "preLaunchTask": "CMake: Debug build"
         },
         {
-            "name": "C++ Project Youth ㄲ딛ㅁㄴㄷ",
+            "name": "C++ Project Youth Release",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/Release/Youth",
